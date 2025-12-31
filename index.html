@@ -282,7 +282,6 @@
             width: 10px;
             height: 10px;
             background: #f0f;
-            position: absolute;
             animation: confetti-fall 3s linear forwards;
         }
 
@@ -344,6 +343,10 @@
     </div>
 
     <script>
+        // Configuration constants
+        const CELEBRATION_DURATION_MINUTES = 10;
+        const CONFETTI_TRIGGER_SECONDS = 5;
+        
         // Major timezones to display
         const availableTimezones = [
             { name: 'Baker Island', zone: 'Etc/GMT+12' },
@@ -529,11 +532,11 @@
             } else if (month === 0 && date === 1) {
                 // January 1st
                 const totalMinutesSinceMidnight = hours * 60 + minutes;
-                if (totalMinutesSinceMidnight <= 10) {
-                    // Within 10 minutes after midnight - count to current year (for celebration message)
+                if (totalMinutesSinceMidnight <= CELEBRATION_DURATION_MINUTES) {
+                    // Within celebration window after midnight - count to current year (for celebration message)
                     newYearYear = year;
                 } else {
-                    // More than 10 minutes after midnight - count to next year
+                    // More than celebration window after midnight - count to next year
                     newYearYear = year + 1;
                 }
             } else {
@@ -560,15 +563,15 @@
         }
 
         function formatCountdown(milliseconds, timezone) {
-            // If negative (past midnight), check if within 10 minutes
+            // If negative (past midnight), check if within celebration window
             if (milliseconds <= 0) {
                 const secondsPast = Math.abs(milliseconds) / 1000;
                 const minutesPast = secondsPast / 60;
-                if (minutesPast <= 10) {
-                    // Just hit midnight if within first 5 seconds
-                    return { display: '🎊 HAPPY NEW YEAR! 🎊', isCelebrating: true, justHitMidnight: secondsPast <= 5 };
+                if (minutesPast <= CELEBRATION_DURATION_MINUTES) {
+                    // Just hit midnight if within trigger window
+                    return { display: '🎊 HAPPY NEW YEAR! 🎊', isCelebrating: true, justHitMidnight: secondsPast <= CONFETTI_TRIGGER_SECONDS };
                 }
-                // If more than 10 minutes past, the getNextNewYear should have switched to next year
+                // If more than celebration duration past, the getNextNewYear should have switched to next year
                 // So this should show a normal countdown
             }
 
@@ -709,7 +712,7 @@
                     contentDiv.innerHTML = `
                         <div class="message">
                             <p>👋 See you next December 31st!</p>
-                            <div class="countdown" style="margin-top: 20px;">${countdown ? countdown.display : ''}</div>
+                            <div class="countdown" style="margin-top: 20px;">${countdown.display}</div>
                             <p style="margin-top: 10px; font-size: 0.8em;">until the next New Year's Eve</p>
                         </div>
                     `;
