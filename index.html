@@ -347,28 +347,142 @@
         const CELEBRATION_DURATION_MINUTES = 10;
         const CONFETTI_TRIGGER_SECONDS = 5;
         
-        // Major timezones to display
+        // Major timezones to display - comprehensive list of world cities
         const availableTimezones = [
-            { name: 'Baker Island', zone: 'Etc/GMT+12' },
-            { name: 'Hawaii', zone: 'Pacific/Honolulu' },
-            { name: 'Alaska', zone: 'America/Anchorage' },
-            { name: 'Los Angeles (PST)', zone: 'America/Los_Angeles' },
-            { name: 'Denver (MST)', zone: 'America/Denver' },
-            { name: 'Chicago (CST)', zone: 'America/Chicago' },
-            { name: 'New York (EST)', zone: 'America/New_York' },
-            { name: 'São Paulo', zone: 'America/Sao_Paulo' },
-            { name: 'London (GMT)', zone: 'Europe/London' },
-            { name: 'Paris', zone: 'Europe/Paris' },
-            { name: 'Cairo', zone: 'Africa/Cairo' },
-            { name: 'Moscow', zone: 'Europe/Moscow' },
-            { name: 'Dubai', zone: 'Asia/Dubai' },
-            { name: 'Mumbai', zone: 'Asia/Kolkata' },
-            { name: 'Bangkok', zone: 'Asia/Bangkok' },
-            { name: 'Hong Kong', zone: 'Asia/Hong_Kong' },
-            { name: 'Tokyo', zone: 'Asia/Tokyo' },
-            { name: 'Sydney', zone: 'Australia/Sydney' },
+            // Pacific
+            { name: 'Kiribati', zone: 'Pacific/Kiritimati' },
             { name: 'Auckland', zone: 'Pacific/Auckland' },
-            { name: 'Kiribati', zone: 'Pacific/Kiritimati' }
+            { name: 'Fiji', zone: 'Pacific/Fiji' },
+            { name: 'Sydney', zone: 'Australia/Sydney' },
+            { name: 'Melbourne', zone: 'Australia/Melbourne' },
+            { name: 'Brisbane', zone: 'Australia/Brisbane' },
+            { name: 'Adelaide', zone: 'Australia/Adelaide' },
+            { name: 'Perth', zone: 'Australia/Perth' },
+            { name: 'Tokyo', zone: 'Asia/Tokyo' },
+            { name: 'Seoul', zone: 'Asia/Seoul' },
+            { name: 'Hong Kong', zone: 'Asia/Hong_Kong' },
+            { name: 'Shanghai', zone: 'Asia/Shanghai' },
+            { name: 'Beijing', zone: 'Asia/Shanghai' },
+            { name: 'Singapore', zone: 'Asia/Singapore' },
+            { name: 'Manila', zone: 'Asia/Manila' },
+            { name: 'Taipei', zone: 'Asia/Taipei' },
+            { name: 'Bangkok', zone: 'Asia/Bangkok' },
+            { name: 'Jakarta', zone: 'Asia/Jakarta' },
+            { name: 'Hanoi', zone: 'Asia/Ho_Chi_Minh' },
+            { name: 'Ho Chi Minh City', zone: 'Asia/Ho_Chi_Minh' },
+            { name: 'Yangon', zone: 'Asia/Yangon' },
+            { name: 'Dhaka', zone: 'Asia/Dhaka' },
+            { name: 'Mumbai', zone: 'Asia/Kolkata' },
+            { name: 'Delhi', zone: 'Asia/Kolkata' },
+            { name: 'Kolkata', zone: 'Asia/Kolkata' },
+            { name: 'Kathmandu', zone: 'Asia/Kathmandu' },
+            { name: 'Karachi', zone: 'Asia/Karachi' },
+            { name: 'Kabul', zone: 'Asia/Kabul' },
+            { name: 'Dubai', zone: 'Asia/Dubai' },
+            { name: 'Abu Dhabi', zone: 'Asia/Dubai' },
+            { name: 'Muscat', zone: 'Asia/Muscat' },
+            { name: 'Tehran', zone: 'Asia/Tehran' },
+            { name: 'Baghdad', zone: 'Asia/Baghdad' },
+            { name: 'Kuwait City', zone: 'Asia/Kuwait' },
+            { name: 'Riyadh', zone: 'Asia/Riyadh' },
+            { name: 'Doha', zone: 'Asia/Qatar' },
+            { name: 'Jerusalem', zone: 'Asia/Jerusalem' },
+            { name: 'Beirut', zone: 'Asia/Beirut' },
+            { name: 'Amman', zone: 'Asia/Amman' },
+            { name: 'Damascus', zone: 'Asia/Damascus' },
+            { name: 'Ankara', zone: 'Europe/Istanbul' },
+            { name: 'Istanbul', zone: 'Europe/Istanbul' },
+            // Africa
+            { name: 'Cairo', zone: 'Africa/Cairo' },
+            { name: 'Johannesburg', zone: 'Africa/Johannesburg' },
+            { name: 'Cape Town', zone: 'Africa/Johannesburg' },
+            { name: 'Nairobi', zone: 'Africa/Nairobi' },
+            { name: 'Lagos', zone: 'Africa/Lagos' },
+            { name: 'Accra', zone: 'Africa/Accra' },
+            { name: 'Algiers', zone: 'Africa/Algiers' },
+            { name: 'Tunis', zone: 'Africa/Tunis' },
+            { name: 'Casablanca', zone: 'Africa/Casablanca' },
+            { name: 'Addis Ababa', zone: 'Africa/Addis_Ababa' },
+            { name: 'Dar es Salaam', zone: 'Africa/Dar_es_Salaam' },
+            // Europe
+            { name: 'Moscow', zone: 'Europe/Moscow' },
+            { name: 'Saint Petersburg', zone: 'Europe/Moscow' },
+            { name: 'Minsk', zone: 'Europe/Minsk' },
+            { name: 'Kyiv', zone: 'Europe/Kyiv' },
+            { name: 'Kiev', zone: 'Europe/Kyiv' },
+            { name: 'Helsinki', zone: 'Europe/Helsinki' },
+            { name: 'Athens', zone: 'Europe/Athens' },
+            { name: 'Bucharest', zone: 'Europe/Bucharest' },
+            { name: 'Sofia', zone: 'Europe/Sofia' },
+            { name: 'Vienna', zone: 'Europe/Vienna' },
+            { name: 'Budapest', zone: 'Europe/Budapest' },
+            { name: 'Prague', zone: 'Europe/Prague' },
+            { name: 'Warsaw', zone: 'Europe/Warsaw' },
+            { name: 'Rome', zone: 'Europe/Rome' },
+            { name: 'Milan', zone: 'Europe/Rome' },
+            { name: 'Berlin', zone: 'Europe/Berlin' },
+            { name: 'Munich', zone: 'Europe/Berlin' },
+            { name: 'Frankfurt', zone: 'Europe/Berlin' },
+            { name: 'Hamburg', zone: 'Europe/Berlin' },
+            { name: 'Zurich', zone: 'Europe/Zurich' },
+            { name: 'Geneva', zone: 'Europe/Zurich' },
+            { name: 'Amsterdam', zone: 'Europe/Amsterdam' },
+            { name: 'Brussels', zone: 'Europe/Brussels' },
+            { name: 'Paris', zone: 'Europe/Paris' },
+            { name: 'Lyon', zone: 'Europe/Paris' },
+            { name: 'Madrid', zone: 'Europe/Madrid' },
+            { name: 'Barcelona', zone: 'Europe/Madrid' },
+            { name: 'Lisbon', zone: 'Europe/Lisbon' },
+            { name: 'London', zone: 'Europe/London' },
+            { name: 'Manchester', zone: 'Europe/London' },
+            { name: 'Edinburgh', zone: 'Europe/London' },
+            { name: 'Dublin', zone: 'Europe/Dublin' },
+            { name: 'Oslo', zone: 'Europe/Oslo' },
+            { name: 'Stockholm', zone: 'Europe/Stockholm' },
+            { name: 'Copenhagen', zone: 'Europe/Copenhagen' },
+            { name: 'Reykjavik', zone: 'Atlantic/Reykjavik' },
+            // Americas
+            { name: 'São Paulo', zone: 'America/Sao_Paulo' },
+            { name: 'Rio de Janeiro', zone: 'America/Sao_Paulo' },
+            { name: 'Buenos Aires', zone: 'America/Argentina/Buenos_Aires' },
+            { name: 'Santiago', zone: 'America/Santiago' },
+            { name: 'Lima', zone: 'America/Lima' },
+            { name: 'Bogota', zone: 'America/Bogota' },
+            { name: 'Caracas', zone: 'America/Caracas' },
+            { name: 'Mexico City', zone: 'America/Mexico_City' },
+            { name: 'Guadalajara', zone: 'America/Mexico_City' },
+            { name: 'Monterrey', zone: 'America/Monterrey' },
+            { name: 'Havana', zone: 'America/Havana' },
+            { name: 'Panama City', zone: 'America/Panama' },
+            { name: 'San Jose', zone: 'America/Costa_Rica' },
+            { name: 'Guatemala City', zone: 'America/Guatemala' },
+            { name: 'New York', zone: 'America/New_York' },
+            { name: 'Boston', zone: 'America/New_York' },
+            { name: 'Philadelphia', zone: 'America/New_York' },
+            { name: 'Washington DC', zone: 'America/New_York' },
+            { name: 'Miami', zone: 'America/New_York' },
+            { name: 'Atlanta', zone: 'America/New_York' },
+            { name: 'Toronto', zone: 'America/Toronto' },
+            { name: 'Montreal', zone: 'America/Toronto' },
+            { name: 'Chicago', zone: 'America/Chicago' },
+            { name: 'Houston', zone: 'America/Chicago' },
+            { name: 'Dallas', zone: 'America/Chicago' },
+            { name: 'Winnipeg', zone: 'America/Winnipeg' },
+            { name: 'Denver', zone: 'America/Denver' },
+            { name: 'Phoenix', zone: 'America/Phoenix' },
+            { name: 'Calgary', zone: 'America/Edmonton' },
+            { name: 'Edmonton', zone: 'America/Edmonton' },
+            { name: 'Los Angeles', zone: 'America/Los_Angeles' },
+            { name: 'San Francisco', zone: 'America/Los_Angeles' },
+            { name: 'San Diego', zone: 'America/Los_Angeles' },
+            { name: 'Las Vegas', zone: 'America/Los_Angeles' },
+            { name: 'Seattle', zone: 'America/Los_Angeles' },
+            { name: 'Portland', zone: 'America/Los_Angeles' },
+            { name: 'Vancouver', zone: 'America/Vancouver' },
+            { name: 'Anchorage', zone: 'America/Anchorage' },
+            { name: 'Honolulu', zone: 'Pacific/Honolulu' },
+            // Special zones
+            { name: 'Baker Island', zone: 'Etc/GMT+12' }
         ];
 
         // Get user's selected cities from localStorage
@@ -382,18 +496,26 @@
                 console.error('Error reading localStorage:', e);
             }
             
-            // Default: show all available cities
+            // Default: user timezone + 2 others (New York and Tokyo)
             const userTz = getUserTimezone();
-            const allCities = [userTz];
+            const defaults = [userTz];
             
-            // Add all other timezones from availableTimezones
-            availableTimezones.forEach(tz => {
-                if (!allCities.includes(tz.zone)) {
-                    allCities.push(tz.zone);
-                }
-            });
+            // Add New York if not user's timezone
+            if (userTz !== 'America/New_York') {
+                defaults.push('America/New_York');
+            }
             
-            return allCities;
+            // Add Tokyo if not user's timezone
+            if (userTz !== 'Asia/Tokyo') {
+                defaults.push('Asia/Tokyo');
+            }
+            
+            // If user is in both NY and Tokyo (impossible but safe), add London
+            if (defaults.length === 1) {
+                defaults.push('Europe/London');
+            }
+            
+            return defaults;
         }
 
         // Save selected cities to localStorage
