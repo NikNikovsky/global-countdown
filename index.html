@@ -659,7 +659,7 @@
         }
 
         function isDecember31stOrJanuary1st() {
-            // Cache the result for 5 minutes to avoid creating Date objects too frequently
+            // Cache the result for 1 minute to avoid creating Date objects too frequently
             // Shorter cache duration to handle date transitions better
             const now = Date.now();
             const cacheExpired = now - lastDateCheckTime >= DATE_CHECK_CACHE_DURATION;
@@ -852,6 +852,8 @@
         }
 
         // Show notification popup for a city
+        // Note: Popup timeouts are not stored since this is a single-page app
+        // that typically stays open for the entire celebration period
         function showNotificationPopup(cityName) {
             // Create popup element
             const popup = document.createElement('div');
@@ -867,6 +869,8 @@
         }
 
         // Update tab title with city celebration
+        // Note: Only the most recent city's title will be shown if multiple cities
+        // hit midnight simultaneously. This is intentional to avoid title conflicts.
         function updateTabTitle(cityName) {
             document.title = `🎊 Happy New Year to ${cityName}! 🎊`;
             
@@ -910,6 +914,14 @@
             return true;
         }
 
+        // Check if time remaining is within the window for midnight notifications
+        function isWithinMidnightCheckWindow(timeRemaining) {
+            // Check negative times (after midnight) up to the trigger window to catch the celebration period
+            // Check positive times (before midnight) up to MIDNIGHT_CHECK_WINDOW_MS
+            return timeRemaining <= MIDNIGHT_CHECK_WINDOW_MS && 
+                   timeRemaining >= -(CONFETTI_TRIGGER_SECONDS * 1000);
+        }
+
         // Check for off-screen cities that have just passed midnight
         function checkOffScreenCitiesMidnight() {
             if (!isDecember31stOrJanuary1st()) return;
@@ -934,10 +946,9 @@
                 
                 const timeRemaining = newYear.getTime() - now;
                 
-                // Quick filter: Only check cities within the configured window before or slightly after midnight
-                // We check negative times (after midnight) up to the trigger window to catch the celebration period
-                // We check positive times (before midnight) up to MIDNIGHT_CHECK_WINDOW_MS
-                if (timeRemaining > MIDNIGHT_CHECK_WINDOW_MS || timeRemaining < -(CONFETTI_TRIGGER_SECONDS * 1000)) return;
+                // Quick filter: Only check cities within the configured window
+                // This avoids expensive formatCountdown calls for cities far from midnight
+                if (!isWithinMidnightCheckWindow(timeRemaining)) return;
                 
                 const countdown = formatCountdown(timeRemaining, timezone);
                 
