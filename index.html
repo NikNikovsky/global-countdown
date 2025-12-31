@@ -41,6 +41,125 @@
             opacity: 0.9;
         }
 
+        .detected-timezone {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .add-city-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            padding: 12px 24px;
+            font-size: 1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .add-city-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .city-list {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .city-option {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 2px solid transparent;
+        }
+
+        .city-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .delete-btn {
+            background: rgba(255, 59, 48, 0.8);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: rgba(255, 59, 48, 1);
+        }
+
+        .timezone-card.user-timezone .delete-btn {
+            display: none;
+        }
+
         .message {
             text-align: center;
             font-size: 1.5em;
@@ -143,14 +262,27 @@
         <header>
             <h1>🎉 Global New Year Countdown 🎉</h1>
             <p class="subtitle">Watch the New Year arrive around the world!</p>
+            <p class="detected-timezone" id="detected-tz"></p>
         </header>
 
+        <div class="controls">
+            <button class="add-city-btn" onclick="openCityModal()">➕ Add City</button>
+        </div>
+
         <div id="content"></div>
+
+        <div class="modal" id="cityModal">
+            <div class="modal-content">
+                <div class="modal-header">Add a City</div>
+                <div class="city-list" id="cityList"></div>
+                <button class="modal-close" onclick="closeCityModal()">Close</button>
+            </div>
+        </div>
     </div>
 
     <script>
         // Major timezones to display
-        const timezones = [
+        const availableTimezones = [
             { name: 'Baker Island', zone: 'Etc/GMT+12' },
             { name: 'Hawaii', zone: 'Pacific/Honolulu' },
             { name: 'Alaska', zone: 'America/Anchorage' },
@@ -172,6 +304,81 @@
             { name: 'Auckland', zone: 'Pacific/Auckland' },
             { name: 'Kiribati', zone: 'Pacific/Kiritimati' }
         ];
+
+        // Get user's selected cities from localStorage
+        function getSelectedCities() {
+            const stored = localStorage.getItem('selectedCities');
+            if (stored) {
+                return JSON.parse(stored);
+            }
+            // Default: user timezone + 2 others (New York and Tokyo)
+            const userTz = getUserTimezone();
+            const defaults = [userTz, 'America/New_York', 'Asia/Tokyo'];
+            return defaults;
+        }
+
+        // Save selected cities to localStorage
+        function saveSelectedCities(cities) {
+            localStorage.setItem('selectedCities', JSON.stringify(cities));
+        }
+
+        // Add a city
+        function addCity(timezone) {
+            const selected = getSelectedCities();
+            if (!selected.includes(timezone)) {
+                selected.push(timezone);
+                saveSelectedCities(selected);
+                renderTimezones();
+            }
+            closeCityModal();
+        }
+
+        // Remove a city
+        function removeCity(timezone) {
+            const selected = getSelectedCities();
+            const filtered = selected.filter(tz => tz !== timezone);
+            saveSelectedCities(filtered);
+            renderTimezones();
+        }
+
+        // Open city modal
+        function openCityModal() {
+            const modal = document.getElementById('cityModal');
+            const cityList = document.getElementById('cityList');
+            const selected = getSelectedCities();
+            
+            cityList.innerHTML = '';
+            availableTimezones.forEach(tz => {
+                const isSelected = selected.includes(tz.zone);
+                const div = document.createElement('div');
+                div.className = 'city-option';
+                div.innerHTML = `${tz.name} ${isSelected ? '✓' : ''}`;
+                if (!isSelected) {
+                    div.onclick = () => addCity(tz.zone);
+                } else {
+                    div.style.opacity = '0.5';
+                    div.style.cursor = 'default';
+                }
+                cityList.appendChild(div);
+            });
+            
+            modal.classList.add('show');
+        }
+
+        // Close city modal
+        function closeCityModal() {
+            const modal = document.getElementById('cityModal');
+            modal.classList.remove('show');
+        }
+
+        // Get friendly timezone name
+        function getFriendlyTimezoneName(timezone) {
+            const found = availableTimezones.find(tz => tz.zone === timezone);
+            if (found) return found.name;
+            
+            // If not in our list, format the timezone nicely
+            return timezone.replace(/_/g, ' ').split('/').pop();
+        }
 
         function isDecember31stOrJanuary1st() {
             const now = new Date();
@@ -264,6 +471,11 @@
 
         function renderTimezones() {
             const contentDiv = document.getElementById('content');
+            const detectedTzDiv = document.getElementById('detected-tz');
+            const userTimezone = getUserTimezone();
+            
+            // Display detected timezone
+            detectedTzDiv.textContent = `Detected timezone: ${userTimezone}`;
             
             if (!isDecember31stOrJanuary1st()) {
                 contentDiv.innerHTML = `
@@ -275,11 +487,19 @@
                 return;
             }
 
-            const userTimezone = getUserTimezone();
+            const selectedCities = getSelectedCities();
             const now = Date.now();
 
-            // Sort timezones: user timezone first, then by how close to New Year
-            const sortedTimezones = [...timezones].sort((a, b) => {
+            // Build timezone objects for selected cities
+            const timezonesToDisplay = selectedCities.map(tzZone => {
+                return {
+                    name: getFriendlyTimezoneName(tzZone),
+                    zone: tzZone
+                };
+            });
+
+            // Sort: user timezone first, then by how close to New Year
+            const sortedTimezones = timezonesToDisplay.sort((a, b) => {
                 const aIsUser = a.zone === userTimezone;
                 const bIsUser = b.zone === userTimezone;
                 
@@ -296,14 +516,6 @@
                 
                 return aTime - bTime;
             });
-
-            // Add user timezone if not in list
-            if (!timezones.some(tz => tz.zone === userTimezone)) {
-                sortedTimezones.unshift({
-                    name: 'Your Location',
-                    zone: userTimezone
-                });
-            }
 
             let html = '<div class="timezone-list">';
             
@@ -338,6 +550,7 @@
                             ${!countdown.isCelebrating ? '<span class="countdown-label">until New Year</span>' : ''}
                         </div>
                         <div class="local-time">${localTimeStr}</div>
+                        ${!isUserTz ? `<button class="delete-btn" onclick="removeCity('${tz.zone}')">🗑️ Remove</button>` : ''}
                     </div>
                 `;
             });
