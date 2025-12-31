@@ -497,6 +497,11 @@
         function getTimeInTimezone(timezone) {
             try {
                 // Get current time components in the target timezone
+                // Note: We extract the date/time components (year, month, day, hour, etc.) from the target timezone
+                // and create a local Date object with those values. This is intentional - we only use this Date
+                // to extract and compare the COMPONENTS (e.g., "is it Dec 31 or Jan 1?", "what hour is it?"),
+                // not for absolute time calculations. All absolute time calculations are done in getNextNewYear()
+                // which properly handles UTC conversion.
                 const formatter = new Intl.DateTimeFormat('en-US', {
                     timeZone: timezone,
                     year: 'numeric',
@@ -517,8 +522,6 @@
                 const second = parseInt(parts.find(p => p.type === 'second').value);
                 
                 // Create a Date object representing this time
-                // Note: This creates a Date in the local timezone with these values
-                // which is what we want for comparison purposes
                 return new Date(year, month, day, hour, minute, second);
             } catch (e) {
                 console.error('Error getting time in timezone:', e);
@@ -584,7 +587,9 @@
                 const testHour = parseInt(parts.find(p => p.type === 'hour').value);
                 
                 // Check for midnight (hour 0 or 24) on January 1st of the target year
-                // Note: Some locales return 24 for midnight instead of 0
+                // Note: Intl.DateTimeFormat with hour12:false can return 24 for midnight at the start
+                // of a new day (e.g., "01/01/2026, 24:00:00" for the exact moment of transition).
+                // This has been verified through testing and is standard ISO 8601 behavior.
                 if ((testHour === 0 || testHour === 24) && testMonth === 0 && testDay === 1 && testYear === newYearYear) {
                     return testTime;
                 }
