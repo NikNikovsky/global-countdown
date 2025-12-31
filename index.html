@@ -949,7 +949,6 @@
             const newYear = getNextNewYear(tz.zone);
             if (!newYear) return null;
             
-            const currentTime = getTimeInTimezone(tz.zone);
             const timeRemaining = newYear.getTime() - now;
             const countdown = formatCountdown(timeRemaining, tz.zone);
             
@@ -959,7 +958,8 @@
                 createConfetti();
             }
             
-            const localTimeStr = currentTime ? currentTime.toLocaleString('en-US', {
+            // Display current time in the target timezone
+            const localTimeStr = new Date().toLocaleString('en-US', {
                 timeZone: tz.zone,
                 month: 'short',
                 day: 'numeric',
@@ -967,7 +967,7 @@
                 minute: '2-digit',
                 second: '2-digit',
                 hour12: true
-            }) : '';
+            });
 
             // Create card element
             const card = document.createElement('div');
@@ -1038,7 +1038,6 @@
                 
                 if (!newYear) return;
                 
-                const currentTime = getTimeInTimezone(timezone);
                 const timeRemaining = newYear.getTime() - now;
                 const countdown = formatCountdown(timeRemaining, timezone);
                 
@@ -1060,8 +1059,9 @@
                 }
                 
                 const localTimeDiv = card.querySelector('.local-time');
-                if (localTimeDiv && currentTime) {
-                    const localTimeStr = currentTime.toLocaleString('en-US', {
+                if (localTimeDiv) {
+                    // Display current time in the target timezone
+                    const localTimeStr = new Date().toLocaleString('en-US', {
                         timeZone: timezone,
                         month: 'short',
                         day: 'numeric',
