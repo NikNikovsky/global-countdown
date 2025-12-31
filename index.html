@@ -659,9 +659,12 @@
         }
 
         function isDecember31stOrJanuary1st() {
-            // Cache the result for 1 minute to avoid creating Date objects too frequently
+            // Cache the result for 5 minutes to avoid creating Date objects too frequently
+            // Shorter cache duration to handle date transitions better
             const now = Date.now();
-            if (cachedIsNYEorNYD !== null && now - lastDateCheckTime < DATE_CHECK_CACHE_DURATION) {
+            const cacheExpired = now - lastDateCheckTime >= DATE_CHECK_CACHE_DURATION;
+            
+            if (cachedIsNYEorNYD !== null && !cacheExpired) {
                 return cachedIsNYEorNYD;
             }
             
@@ -670,14 +673,16 @@
             const day = date.getDate();
             
             // December is month 11, January is month 0
-            cachedIsNYEorNYD = (month === 11 && day === 31) || (month === 0 && day === 1);
-            lastDateCheckTime = now;
+            const isNYEorNYD = (month === 11 && day === 31) || (month === 0 && day === 1);
             
-            // Reset notification tracking when date changes
-            if (!cachedIsNYEorNYD && offScreenNotificationsShown.size > 0) {
+            // Reset notification tracking when transitioning away from celebration period
+            if (cachedIsNYEorNYD === true && isNYEorNYD === false) {
                 offScreenNotificationsShown.clear();
                 confettiShown.clear();
             }
+            
+            cachedIsNYEorNYD = isNYEorNYD;
+            lastDateCheckTime = now;
             
             return cachedIsNYEorNYD;
         }
@@ -929,9 +934,10 @@
                 
                 const timeRemaining = newYear.getTime() - now;
                 
-                // Quick filter: Only do detailed check if within configured window of midnight
-                // This avoids expensive formatCountdown calls for cities far from midnight
-                if (Math.abs(timeRemaining) > MIDNIGHT_CHECK_WINDOW_MS) return;
+                // Quick filter: Only check cities within the configured window before or slightly after midnight
+                // We check negative times (after midnight) up to the trigger window to catch the celebration period
+                // We check positive times (before midnight) up to MIDNIGHT_CHECK_WINDOW_MS
+                if (timeRemaining > MIDNIGHT_CHECK_WINDOW_MS || timeRemaining < -(CONFETTI_TRIGGER_SECONDS * 1000)) return;
                 
                 const countdown = formatCountdown(timeRemaining, timezone);
                 
