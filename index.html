@@ -382,26 +382,18 @@
                 console.error('Error reading localStorage:', e);
             }
             
-            // Default: user timezone + 2 others (New York and Tokyo)
+            // Default: show all available cities
             const userTz = getUserTimezone();
-            const defaults = [userTz];
+            const allCities = [userTz];
             
-            // Add New York if not user's timezone
-            if (userTz !== 'America/New_York') {
-                defaults.push('America/New_York');
-            }
+            // Add all other timezones from availableTimezones
+            availableTimezones.forEach(tz => {
+                if (!allCities.includes(tz.zone)) {
+                    allCities.push(tz.zone);
+                }
+            });
             
-            // Add Tokyo if not user's timezone
-            if (userTz !== 'Asia/Tokyo') {
-                defaults.push('Asia/Tokyo');
-            }
-            
-            // If user is in both NY and Tokyo (impossible but safe), add London
-            if (defaults.length === 1) {
-                defaults.push('Europe/London');
-            }
-            
-            return defaults;
+            return allCities;
         }
 
         // Save selected cities to localStorage
