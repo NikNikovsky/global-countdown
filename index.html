@@ -297,7 +297,7 @@
         <div class="modal" id="cityModal">
             <div class="modal-content">
                 <div class="modal-header">Add a City</div>
-                <input type="text" class="search-input" id="citySearch" placeholder="🔍 Search cities..." oninput="filterCities()">
+                <input type="text" class="search-input" id="citySearch" placeholder="🔍 Search cities..." aria-label="Search cities" role="searchbox" oninput="filterCities()">
                 <div class="city-list" id="cityList"></div>
                 <button class="modal-close" onclick="closeCityModal()">Close</button>
             </div>
