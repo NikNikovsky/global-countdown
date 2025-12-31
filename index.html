@@ -325,7 +325,7 @@
 
         @keyframes slideDown {
             from {
-                transform: translateX(-50%) translateY(-100px);
+                transform: translateX(-50%) translateY(-150%);
                 opacity: 0;
             }
             to {
@@ -392,6 +392,11 @@
         // Configuration constants
         const CELEBRATION_DURATION_MINUTES = 10;
         const CONFETTI_TRIGGER_SECONDS = 5;
+        const NOTIFICATION_DISPLAY_DURATION = 5000; // 5 seconds
+        const FADE_OUT_DURATION = 500; // 0.5 seconds
+        const TAB_TITLE_DURATION = 10000; // 10 seconds
+        const DATE_CHECK_CACHE_DURATION = 60000; // 1 minute
+        const MIDNIGHT_CHECK_WINDOW_MS = 10000; // 10 seconds
         
         // Major timezones to display - comprehensive list of world cities
         const availableTimezones = [
@@ -656,7 +661,7 @@
         function isDecember31stOrJanuary1st() {
             // Cache the result for 1 minute to avoid creating Date objects too frequently
             const now = Date.now();
-            if (cachedIsNYEorNYD !== null && now - lastDateCheckTime < 60000) {
+            if (cachedIsNYEorNYD !== null && now - lastDateCheckTime < DATE_CHECK_CACHE_DURATION) {
                 return cachedIsNYEorNYD;
             }
             
@@ -849,21 +854,21 @@
             popup.textContent = `🎉 Happy New Year to ${cityName}! 🎉`;
             document.body.appendChild(popup);
             
-            // Auto-dismiss after 5 seconds
+            // Auto-dismiss after configured duration
             setTimeout(() => {
                 popup.classList.add('fade-out');
-                setTimeout(() => popup.remove(), 500); // Remove after fade animation
-            }, 5000);
+                setTimeout(() => popup.remove(), FADE_OUT_DURATION);
+            }, NOTIFICATION_DISPLAY_DURATION);
         }
 
         // Update tab title with city celebration
         function updateTabTitle(cityName) {
             document.title = `🎊 Happy New Year to ${cityName}! 🎊`;
             
-            // Restore original title after 10 seconds
+            // Restore original title after configured duration
             setTimeout(() => {
                 document.title = originalTitle;
-            }, 10000);
+            }, TAB_TITLE_DURATION);
         }
 
         // Track which timezones have already shown confetti
@@ -924,9 +929,9 @@
                 
                 const timeRemaining = newYear.getTime() - now;
                 
-                // Quick filter: Only do detailed check if within 10 seconds of midnight
+                // Quick filter: Only do detailed check if within configured window of midnight
                 // This avoids expensive formatCountdown calls for cities far from midnight
-                if (Math.abs(timeRemaining) > 10000) return;
+                if (Math.abs(timeRemaining) > MIDNIGHT_CHECK_WINDOW_MS) return;
                 
                 const countdown = formatCountdown(timeRemaining, timezone);
                 
