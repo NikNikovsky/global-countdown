@@ -654,12 +654,27 @@
         }
 
         function isDecember31stOrJanuary1st() {
-            const now = new Date();
-            const month = now.getMonth(); // 0-indexed
-            const date = now.getDate();
+            // Cache the result for 1 minute to avoid creating Date objects too frequently
+            const now = Date.now();
+            if (cachedIsNYEorNYD !== null && now - lastDateCheckTime < 60000) {
+                return cachedIsNYEorNYD;
+            }
+            
+            const date = new Date();
+            const month = date.getMonth(); // 0-indexed
+            const day = date.getDate();
             
             // December is month 11, January is month 0
-            return (month === 11 && date === 31) || (month === 0 && date === 1);
+            cachedIsNYEorNYD = (month === 11 && day === 31) || (month === 0 && day === 1);
+            lastDateCheckTime = now;
+            
+            // Reset notification tracking when date changes
+            if (!cachedIsNYEorNYD && offScreenNotificationsShown.size > 0) {
+                offScreenNotificationsShown.clear();
+                confettiShown.clear();
+            }
+            
+            return cachedIsNYEorNYD;
         }
 
         function getTimeInTimezone(timezone) {
@@ -859,6 +874,10 @@
         
         // Store the original page title
         const originalTitle = document.title;
+        
+        // Cache the date check to avoid creating Date objects on every update
+        let cachedIsNYEorNYD = null;
+        let lastDateCheckTime = 0;
 
         // Check if all cities have passed noon on January 1st
         function allCitiesPassedNoon() {
@@ -888,7 +907,7 @@
             const selectedCities = getSelectedCities();
             const now = Date.now();
             
-            // Check all available timezones
+            // Optimization: Only check timezones that haven't been notified yet
             availableTimezones.forEach(tz => {
                 const timezone = tz.zone;
                 const cityName = tz.name;
@@ -904,6 +923,11 @@
                 if (!newYear) return;
                 
                 const timeRemaining = newYear.getTime() - now;
+                
+                // Quick filter: Only do detailed check if within 10 seconds of midnight
+                // This avoids expensive formatCountdown calls for cities far from midnight
+                if (Math.abs(timeRemaining) > 10000) return;
+                
                 const countdown = formatCountdown(timeRemaining, timezone);
                 
                 // If this city just hit midnight (within the trigger window)
