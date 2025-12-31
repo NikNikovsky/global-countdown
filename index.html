@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global New Year Countdown</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .message {
+            text-align: center;
+            font-size: 1.5em;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .timezone-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .timezone-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            transition: transform 0.3s ease;
+        }
+
+        .timezone-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .timezone-card.user-timezone {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .timezone-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-badge {
+            background: #FFD700;
+            color: #333;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.6em;
+            font-weight: bold;
+        }
+
+        .countdown {
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .countdown-label {
+            font-size: 0.5em;
+            opacity: 0.8;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .celebration {
+            font-size: 1.2em;
+            text-align: center;
+            color: #FFD700;
+            font-weight: bold;
+        }
+
+        .local-time {
+            text-align: center;
+            opacity: 0.8;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .timezone-list {
+                grid-template-columns: 1fr;
+            }
+
+            .countdown {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎉 Global New Year Countdown 🎉</h1>
+            <p class="subtitle">Watch the New Year arrive around the world!</p>
+        </header>
+
+        <div id="content"></div>
+    </div>
+
+    <script>
+        // Major timezones to display
+        const timezones = [
+            { name: 'Baker Island', zone: 'Pacific/Midway', offset: -12 },
+            { name: 'Hawaii', zone: 'Pacific/Honolulu', offset: -10 },
+            { name: 'Alaska', zone: 'America/Anchorage', offset: -9 },
+            { name: 'Los Angeles (PST)', zone: 'America/Los_Angeles', offset: -8 },
+            { name: 'Denver (MST)', zone: 'America/Denver', offset: -7 },
+            { name: 'Chicago (CST)', zone: 'America/Chicago', offset: -6 },
+            { name: 'New York (EST)', zone: 'America/New_York', offset: -5 },
+            { name: 'São Paulo', zone: 'America/Sao_Paulo', offset: -3 },
+            { name: 'London (GMT)', zone: 'Europe/London', offset: 0 },
+            { name: 'Paris', zone: 'Europe/Paris', offset: 1 },
+            { name: 'Cairo', zone: 'Africa/Cairo', offset: 2 },
+            { name: 'Moscow', zone: 'Europe/Moscow', offset: 3 },
+            { name: 'Dubai', zone: 'Asia/Dubai', offset: 4 },
+            { name: 'Mumbai', zone: 'Asia/Kolkata', offset: 5.5 },
+            { name: 'Bangkok', zone: 'Asia/Bangkok', offset: 7 },
+            { name: 'Hong Kong', zone: 'Asia/Hong_Kong', offset: 8 },
+            { name: 'Tokyo', zone: 'Asia/Tokyo', offset: 9 },
+            { name: 'Sydney', zone: 'Australia/Sydney', offset: 11 },
+            { name: 'Auckland', zone: 'Pacific/Auckland', offset: 13 },
+            { name: 'Kiribati', zone: 'Pacific/Kiritimati', offset: 14 }
+        ];
+
+        function isDecember31stOrJanuary1st() {
+            const now = new Date();
+            const month = now.getMonth(); // 0-indexed
+            const date = now.getDate();
+            
+            // December is month 11, January is month 0
+            return (month === 11 && date === 31) || (month === 0 && date === 1);
+        }
+
+        function getTimeInTimezone(timezone) {
+            try {
+                return new Date(new Date().toLocaleString('en-US', { timeZone: timezone }));
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function getNextNewYear(timezone) {
+            const now = getTimeInTimezone(timezone);
+            if (!now) return null;
+
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            
+            // If we're in January, the "next" New Year is this year at midnight Jan 1
+            // If we're in December, the "next" New Year is next year at midnight Jan 1
+            const newYearYear = month === 0 ? year : year + 1;
+            
+            // Create New Year date in UTC then convert to timezone
+            const newYearUTC = new Date(Date.UTC(newYearYear, 0, 1, 0, 0, 0));
+            
+            // Get the timezone offset at New Year
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: timezone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            
+            // Parse the local time string to get exact midnight in that timezone
+            const localMidnight = new Date(`${newYearYear}-01-01T00:00:00`);
+            const localMidnightStr = formatter.format(localMidnight);
+            
+            // Calculate the actual UTC time of midnight in the target timezone
+            const testDate = new Date(newYearUTC);
+            const options = { timeZone: timezone, hour12: false };
+            
+            // Find the exact moment of midnight in the timezone
+            let offset = 0;
+            for (let i = -14; i <= 14; i++) {
+                const testTime = new Date(Date.UTC(newYearYear, 0, 1, -i, 0, 0));
+                const testHour = new Date(testTime.toLocaleString('en-US', { timeZone: timezone })).getHours();
+                const testMonth = new Date(testTime.toLocaleString('en-US', { timeZone: timezone })).getMonth();
+                const testDay = new Date(testTime.toLocaleString('en-US', { timeZone: timezone })).getDate();
+                
+                if (testHour === 0 && testMonth === 0 && testDay === 1) {
+                    return testTime;
+                }
+            }
+            
+            return newYearUTC;
+        }
+
+        function formatCountdown(milliseconds) {
+            if (milliseconds <= 0) {
+                return { display: '🎊 HAPPY NEW YEAR! 🎊', isCelebrating: true };
+            }
+
+            const seconds = Math.floor(milliseconds / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+
+            const displayHours = hours % 24;
+            const displayMinutes = minutes % 60;
+            const displaySeconds = seconds % 60;
+
+            const parts = [];
+            if (days > 0) parts.push(`${days}d`);
+            parts.push(`${displayHours.toString().padStart(2, '0')}h`);
+            parts.push(`${displayMinutes.toString().padStart(2, '0')}m`);
+            parts.push(`${displaySeconds.toString().padStart(2, '0')}s`);
+
+            return { display: parts.join(' '), isCelebrating: false };
+        }
+
+        function getUserTimezone() {
+            return Intl.DateTimeFormat().resolvedOptions().timeZone;
+        }
+
+        function renderTimezones() {
+            const contentDiv = document.getElementById('content');
+            
+            if (!isDecember31stOrJanuary1st()) {
+                contentDiv.innerHTML = `
+                    <div class="message">
+                        <p>🗓️ The Global New Year Countdown is only available on December 31st and January 1st.</p>
+                        <p style="margin-top: 20px; font-size: 0.8em;">Come back during the New Year celebration!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const userTimezone = getUserTimezone();
+            const now = Date.now();
+
+            // Sort timezones: user timezone first, then by how close to New Year
+            const sortedTimezones = [...timezones].sort((a, b) => {
+                const aIsUser = a.zone === userTimezone;
+                const bIsUser = b.zone === userTimezone;
+                
+                if (aIsUser && !bIsUser) return -1;
+                if (!aIsUser && bIsUser) return 1;
+                
+                const aNewYear = getNextNewYear(a.zone);
+                const bNewYear = getNextNewYear(b.zone);
+                
+                if (!aNewYear || !bNewYear) return 0;
+                
+                const aTime = aNewYear.getTime() - now;
+                const bTime = bNewYear.getTime() - now;
+                
+                return aTime - bTime;
+            });
+
+            // Add user timezone if not in list
+            if (!timezones.some(tz => tz.zone === userTimezone)) {
+                sortedTimezones.unshift({
+                    name: 'Your Location',
+                    zone: userTimezone,
+                    offset: 0
+                });
+            }
+
+            let html = '<div class="timezone-list">';
+            
+            sortedTimezones.forEach(tz => {
+                const isUserTz = tz.zone === userTimezone;
+                const newYear = getNextNewYear(tz.zone);
+                
+                if (!newYear) return;
+                
+                const currentTime = getTimeInTimezone(tz.zone);
+                const timeRemaining = newYear.getTime() - now;
+                const countdown = formatCountdown(timeRemaining);
+                
+                const localTimeStr = currentTime ? currentTime.toLocaleString('en-US', {
+                    timeZone: tz.zone,
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                }) : '';
+
+                html += `
+                    <div class="timezone-card ${isUserTz ? 'user-timezone' : ''}" data-timezone="${tz.zone}">
+                        <div class="timezone-name">
+                            ${tz.name}
+                            ${isUserTz ? '<span class="user-badge">YOUR TIMEZONE</span>' : ''}
+                        </div>
+                        <div class="countdown ${countdown.isCelebrating ? 'celebration' : ''}">
+                            ${countdown.display}
+                            ${!countdown.isCelebrating ? '<span class="countdown-label">until New Year</span>' : ''}
+                        </div>
+                        <div class="local-time">${localTimeStr}</div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            contentDiv.innerHTML = html;
+        }
+
+        function updateCountdowns() {
+            const cards = document.querySelectorAll('.timezone-card');
+            const now = Date.now();
+            
+            cards.forEach(card => {
+                const timezone = card.getAttribute('data-timezone');
+                const newYear = getNextNewYear(timezone);
+                
+                if (!newYear) return;
+                
+                const currentTime = getTimeInTimezone(timezone);
+                const timeRemaining = newYear.getTime() - now;
+                const countdown = formatCountdown(timeRemaining);
+                
+                const countdownDiv = card.querySelector('.countdown');
+                if (countdownDiv) {
+                    if (countdown.isCelebrating) {
+                        countdownDiv.className = 'countdown celebration';
+                        countdownDiv.innerHTML = countdown.display;
+                    } else {
+                        countdownDiv.className = 'countdown';
+                        countdownDiv.innerHTML = `${countdown.display}<span class="countdown-label">until New Year</span>`;
+                    }
+                }
+                
+                const localTimeDiv = card.querySelector('.local-time');
+                if (localTimeDiv && currentTime) {
+                    const localTimeStr = currentTime.toLocaleString('en-US', {
+                        timeZone: timezone,
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: true
+                    });
+                    localTimeDiv.textContent = localTimeStr;
+                }
+            });
+        }
+
+        // Initial render
+        renderTimezones();
+
+        // Update every second
+        if (isDecember31stOrJanuary1st()) {
+            setInterval(updateCountdowns, 1000);
+        }
+    </script>
+</body>
+</html>
