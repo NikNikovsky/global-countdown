@@ -398,6 +398,9 @@
             populateCityList();
             
             modal.classList.add('show');
+            
+            // Focus on search input for better UX
+            setTimeout(() => searchInput.focus(), 100);
         }
 
         // Populate city list
