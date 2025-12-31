@@ -1,4 +1,4 @@
-# global-countdown-
+# global-countdown
 
 A global New Year's countdown timer that shows real-time countdowns to midnight across 20+ timezones around the world.
 
@@ -13,7 +13,7 @@ A global New Year's countdown timer that shows real-time countdowns to midnight 
 
 ## Live Demo
 
-Visit the live countdown at: [https://niknikovsky.github.io/global-countdown-/](https://niknikovsky.github.io/global-countdown-/)
+Visit the live countdown at: [https://niknikovsky.github.io/global-countdown/](https://niknikovsky.github.io/global-countdown/)
 
 ## How It Works
 
