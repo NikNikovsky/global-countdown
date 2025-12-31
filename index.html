@@ -609,13 +609,14 @@
                     confetti.style.left = Math.random() * 100 + '%';
                     confetti.style.top = '-10px';
                     confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    const delay = Math.random() * 0.5;
+                    confetti.style.animationDelay = delay + 's';
                     const duration = Math.random() * 2 + 2; // 2-4 seconds
                     confetti.style.animationDuration = duration + 's';
                     container.appendChild(confetti);
                     
-                    // Remove confetti after animation completes (use max duration + delay)
-                    setTimeout(() => confetti.remove(), (duration + 0.5) * 1000);
+                    // Remove confetti after animation completes (duration + delay in milliseconds)
+                    setTimeout(() => confetti.remove(), (duration + delay) * 1000);
                 }, i * 30);
             }
         }
