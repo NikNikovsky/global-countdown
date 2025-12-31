@@ -151,7 +151,7 @@
     <script>
         // Major timezones to display
         const timezones = [
-            { name: 'Baker Island', zone: 'Pacific/Midway' },
+            { name: 'Baker Island', zone: 'Etc/GMT+12' },
             { name: 'Hawaii', zone: 'Pacific/Honolulu' },
             { name: 'Alaska', zone: 'America/Anchorage' },
             { name: 'Los Angeles (PST)', zone: 'America/Los_Angeles' },
@@ -196,27 +196,43 @@
 
             const year = now.getFullYear();
             const month = now.getMonth();
+            const date = now.getDate();
+            const hours = now.getHours();
             
-            // If we're in January, the "next" New Year is this year at midnight Jan 1
-            // If we're in December, the "next" New Year is next year at midnight Jan 1
-            const newYearYear = month === 0 ? year : year + 1;
+            // Determine which New Year we're counting down to
+            // If it's Dec 31st OR it's Jan 1st before noon, count to the upcoming/current Jan 1
+            // If it's Jan 1st after noon, count to next year's Jan 1
+            let newYearYear;
+            if (month === 11 && date === 31) {
+                // December 31st - count to next year
+                newYearYear = year + 1;
+            } else if (month === 0 && date === 1 && hours < 12) {
+                // January 1st before noon - count to current year (New Year just happened or happening)
+                newYearYear = year;
+            } else if (month === 0 && date === 1 && hours >= 12) {
+                // January 1st after noon - count to next year
+                newYearYear = year + 1;
+            } else {
+                // Any other date (shouldn't happen due to date restriction)
+                newYearYear = year + 1;
+            }
             
-            // Create New Year date in UTC then convert to timezone
-            const newYearUTC = new Date(Date.UTC(newYearYear, 0, 1, 0, 0, 0));
-            
-            // Find the exact moment of midnight in the timezone
-            for (let i = -14; i <= 14; i++) {
+            // Find the exact UTC moment when it's midnight (00:00:00) in the target timezone
+            // We search within a reasonable range of UTC offsets
+            for (let i = -12; i <= 14; i++) {
                 const testTime = new Date(Date.UTC(newYearYear, 0, 1, -i, 0, 0));
                 const testHour = new Date(testTime.toLocaleString('en-US', { timeZone: timezone })).getHours();
                 const testMonth = new Date(testTime.toLocaleString('en-US', { timeZone: timezone })).getMonth();
                 const testDay = new Date(testTime.toLocaleString('en-US', { timeZone: timezone })).getDate();
+                const testYear = new Date(testTime.toLocaleString('en-US', { timeZone: timezone })).getFullYear();
                 
-                if (testHour === 0 && testMonth === 0 && testDay === 1) {
+                if (testHour === 0 && testMonth === 0 && testDay === 1 && testYear === newYearYear) {
                     return testTime;
                 }
             }
             
-            return newYearUTC;
+            // Fallback to UTC midnight if we can't find the exact time
+            return new Date(Date.UTC(newYearYear, 0, 1, 0, 0, 0));
         }
 
         function formatCountdown(milliseconds) {
