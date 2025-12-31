@@ -562,9 +562,11 @@
         function formatCountdown(milliseconds, timezone) {
             // If negative (past midnight), check if within 10 minutes
             if (milliseconds <= 0) {
-                const minutesPast = Math.abs(milliseconds) / (1000 * 60);
+                const secondsPast = Math.abs(milliseconds) / 1000;
+                const minutesPast = secondsPast / 60;
                 if (minutesPast <= 10) {
-                    return { display: '🎊 HAPPY NEW YEAR! 🎊', isCelebrating: true, justHitMidnight: minutesPast < 0.1 };
+                    // Just hit midnight if within first 5 seconds
+                    return { display: '🎊 HAPPY NEW YEAR! 🎊', isCelebrating: true, justHitMidnight: secondsPast <= 5 };
                 }
                 // If more than 10 minutes past, the getNextNewYear should have switched to next year
                 // So this should show a normal countdown
@@ -605,10 +607,12 @@
                     confetti.style.top = '-10px';
                     confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
                     confetti.style.animationDelay = Math.random() * 0.5 + 's';
-                    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    const duration = Math.random() * 2 + 2; // 2-4 seconds
+                    confetti.style.animationDuration = duration + 's';
                     container.appendChild(confetti);
                     
-                    setTimeout(() => confetti.remove(), 3000);
+                    // Remove confetti after animation completes (use max duration + delay)
+                    setTimeout(() => confetti.remove(), (duration + 0.5) * 1000);
                 }, i * 30);
             }
         }
