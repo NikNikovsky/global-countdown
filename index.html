@@ -104,6 +104,28 @@
             font-weight: bold;
         }
 
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1em;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
         .city-list {
             display: grid;
             gap: 10px;
@@ -191,8 +213,9 @@
         }
 
         .timezone-card.user-timezone {
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 215, 0, 0.3);
+            border: 3px solid rgba(255, 215, 0, 0.8);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
         }
 
         .timezone-name {
@@ -274,6 +297,7 @@
         <div class="modal" id="cityModal">
             <div class="modal-content">
                 <div class="modal-header">Add a City</div>
+                <input type="text" class="search-input" id="citySearch" placeholder="🔍 Search cities..." oninput="filterCities()">
                 <div class="city-list" id="cityList"></div>
                 <button class="modal-close" onclick="closeCityModal()">Close</button>
             </div>
@@ -365,11 +389,30 @@
         // Open city modal
         function openCityModal() {
             const modal = document.getElementById('cityModal');
+            const searchInput = document.getElementById('citySearch');
+            
+            // Reset search input
+            searchInput.value = '';
+            
+            // Populate city list
+            populateCityList();
+            
+            modal.classList.add('show');
+        }
+
+        // Populate city list
+        function populateCityList(searchTerm = '') {
             const cityList = document.getElementById('cityList');
             const selected = getSelectedCities();
             
             cityList.innerHTML = '';
-            availableTimezones.forEach(tz => {
+            
+            // Filter cities based on search term
+            const filteredTimezones = availableTimezones.filter(tz => 
+                tz.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            
+            filteredTimezones.forEach(tz => {
                 const isSelected = selected.includes(tz.zone);
                 const div = document.createElement('div');
                 div.className = 'city-option';
@@ -382,8 +425,12 @@
                 }
                 cityList.appendChild(div);
             });
-            
-            modal.classList.add('show');
+        }
+
+        // Filter cities based on search input
+        function filterCities() {
+            const searchInput = document.getElementById('citySearch');
+            populateCityList(searchInput.value);
         }
 
         // Close city modal
@@ -495,8 +542,9 @@
             const detectedTzDiv = document.getElementById('detected-tz');
             const userTimezone = getUserTimezone();
             
-            // Display detected timezone
-            detectedTzDiv.textContent = `Detected timezone: ${userTimezone}`;
+            // Display detected city name instead of timezone ID
+            const userCityName = getFriendlyTimezoneName(userTimezone);
+            detectedTzDiv.textContent = `Your location: ${userCityName}`;
             
             if (!isDecember31stOrJanuary1st()) {
                 contentDiv.innerHTML = `
