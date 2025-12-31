@@ -151,26 +151,26 @@
     <script>
         // Major timezones to display
         const timezones = [
-            { name: 'Baker Island', zone: 'Pacific/Midway', offset: -12 },
-            { name: 'Hawaii', zone: 'Pacific/Honolulu', offset: -10 },
-            { name: 'Alaska', zone: 'America/Anchorage', offset: -9 },
-            { name: 'Los Angeles (PST)', zone: 'America/Los_Angeles', offset: -8 },
-            { name: 'Denver (MST)', zone: 'America/Denver', offset: -7 },
-            { name: 'Chicago (CST)', zone: 'America/Chicago', offset: -6 },
-            { name: 'New York (EST)', zone: 'America/New_York', offset: -5 },
-            { name: 'São Paulo', zone: 'America/Sao_Paulo', offset: -3 },
-            { name: 'London (GMT)', zone: 'Europe/London', offset: 0 },
-            { name: 'Paris', zone: 'Europe/Paris', offset: 1 },
-            { name: 'Cairo', zone: 'Africa/Cairo', offset: 2 },
-            { name: 'Moscow', zone: 'Europe/Moscow', offset: 3 },
-            { name: 'Dubai', zone: 'Asia/Dubai', offset: 4 },
-            { name: 'Mumbai', zone: 'Asia/Kolkata', offset: 5.5 },
-            { name: 'Bangkok', zone: 'Asia/Bangkok', offset: 7 },
-            { name: 'Hong Kong', zone: 'Asia/Hong_Kong', offset: 8 },
-            { name: 'Tokyo', zone: 'Asia/Tokyo', offset: 9 },
-            { name: 'Sydney', zone: 'Australia/Sydney', offset: 11 },
-            { name: 'Auckland', zone: 'Pacific/Auckland', offset: 13 },
-            { name: 'Kiribati', zone: 'Pacific/Kiritimati', offset: 14 }
+            { name: 'Baker Island', zone: 'Pacific/Midway' },
+            { name: 'Hawaii', zone: 'Pacific/Honolulu' },
+            { name: 'Alaska', zone: 'America/Anchorage' },
+            { name: 'Los Angeles (PST)', zone: 'America/Los_Angeles' },
+            { name: 'Denver (MST)', zone: 'America/Denver' },
+            { name: 'Chicago (CST)', zone: 'America/Chicago' },
+            { name: 'New York (EST)', zone: 'America/New_York' },
+            { name: 'São Paulo', zone: 'America/Sao_Paulo' },
+            { name: 'London (GMT)', zone: 'Europe/London' },
+            { name: 'Paris', zone: 'Europe/Paris' },
+            { name: 'Cairo', zone: 'Africa/Cairo' },
+            { name: 'Moscow', zone: 'Europe/Moscow' },
+            { name: 'Dubai', zone: 'Asia/Dubai' },
+            { name: 'Mumbai', zone: 'Asia/Kolkata' },
+            { name: 'Bangkok', zone: 'Asia/Bangkok' },
+            { name: 'Hong Kong', zone: 'Asia/Hong_Kong' },
+            { name: 'Tokyo', zone: 'Asia/Tokyo' },
+            { name: 'Sydney', zone: 'Australia/Sydney' },
+            { name: 'Auckland', zone: 'Pacific/Auckland' },
+            { name: 'Kiribati', zone: 'Pacific/Kiritimati' }
         ];
 
         function isDecember31stOrJanuary1st() {
@@ -204,28 +204,7 @@
             // Create New Year date in UTC then convert to timezone
             const newYearUTC = new Date(Date.UTC(newYearYear, 0, 1, 0, 0, 0));
             
-            // Get the timezone offset at New Year
-            const formatter = new Intl.DateTimeFormat('en-US', {
-                timeZone: timezone,
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            });
-            
-            // Parse the local time string to get exact midnight in that timezone
-            const localMidnight = new Date(`${newYearYear}-01-01T00:00:00`);
-            const localMidnightStr = formatter.format(localMidnight);
-            
-            // Calculate the actual UTC time of midnight in the target timezone
-            const testDate = new Date(newYearUTC);
-            const options = { timeZone: timezone, hour12: false };
-            
             // Find the exact moment of midnight in the timezone
-            let offset = 0;
             for (let i = -14; i <= 14; i++) {
                 const testTime = new Date(Date.UTC(newYearYear, 0, 1, -i, 0, 0));
                 const testHour = new Date(testTime.toLocaleString('en-US', { timeZone: timezone })).getHours();
@@ -306,8 +285,7 @@
             if (!timezones.some(tz => tz.zone === userTimezone)) {
                 sortedTimezones.unshift({
                     name: 'Your Location',
-                    zone: userTimezone,
-                    offset: 0
+                    zone: userTimezone
                 });
             }
 
