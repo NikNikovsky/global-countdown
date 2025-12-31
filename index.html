@@ -302,6 +302,52 @@
             z-index: 9999;
         }
 
+        /* Notification popup styles */
+        .notification-popup {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            font-size: 1.2em;
+            font-weight: bold;
+            z-index: 10000;
+            animation: slideDown 0.5s ease-out;
+            border: 2px solid rgba(255, 215, 0, 0.8);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            max-width: 90%;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .notification-popup.fade-out {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+        }
+
         @media (max-width: 768px) {
             h1 {
                 font-size: 2em;
@@ -780,8 +826,39 @@
             }
         }
 
+        // Show notification popup for a city
+        function showNotificationPopup(cityName) {
+            // Create popup element
+            const popup = document.createElement('div');
+            popup.className = 'notification-popup';
+            popup.textContent = `🎉 Happy New Year to ${cityName}! 🎉`;
+            document.body.appendChild(popup);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                popup.classList.add('fade-out');
+                setTimeout(() => popup.remove(), 500); // Remove after fade animation
+            }, 5000);
+        }
+
+        // Update tab title with city celebration
+        function updateTabTitle(cityName) {
+            document.title = `🎊 Happy New Year to ${cityName}! 🎊`;
+            
+            // Restore original title after 10 seconds
+            setTimeout(() => {
+                document.title = originalTitle;
+            }, 10000);
+        }
+
         // Track which timezones have already shown confetti
         const confettiShown = new Set();
+        
+        // Track which off-screen cities have already triggered notifications
+        const offScreenNotificationsShown = new Set();
+        
+        // Store the original page title
+        const originalTitle = document.title;
 
         // Check if all cities have passed noon on January 1st
         function allCitiesPassedNoon() {
@@ -802,6 +879,48 @@
             }
             
             return true;
+        }
+
+        // Check for off-screen cities that have just passed midnight
+        function checkOffScreenCitiesMidnight() {
+            if (!isDecember31stOrJanuary1st()) return;
+            
+            const selectedCities = getSelectedCities();
+            const now = Date.now();
+            
+            // Check all available timezones
+            availableTimezones.forEach(tz => {
+                const timezone = tz.zone;
+                const cityName = tz.name;
+                
+                // Skip if this city is currently displayed
+                if (selectedCities.includes(timezone)) return;
+                
+                // Skip if we've already shown notification for this city
+                if (offScreenNotificationsShown.has(timezone)) return;
+                
+                // Get the next New Year for this timezone
+                const newYear = getNextNewYear(timezone);
+                if (!newYear) return;
+                
+                const timeRemaining = newYear.getTime() - now;
+                const countdown = formatCountdown(timeRemaining, timezone);
+                
+                // If this city just hit midnight (within the trigger window)
+                if (countdown.justHitMidnight) {
+                    // Mark as shown
+                    offScreenNotificationsShown.add(timezone);
+                    
+                    // Show confetti
+                    createConfetti();
+                    
+                    // Update tab title
+                    updateTabTitle(cityName);
+                    
+                    // Show popup notification
+                    showNotificationPopup(cityName);
+                }
+            });
         }
 
         // Get next December 31st in user's timezone
@@ -1028,6 +1147,9 @@
                 renderTimezones();
                 return;
             }
+            
+            // Check for off-screen cities passing midnight
+            checkOffScreenCitiesMidnight();
             
             const cards = document.querySelectorAll('.timezone-card');
             const now = Date.now();
