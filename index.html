@@ -1284,10 +1284,13 @@
                     card.getAttribute('data-timezone')
                 );
                 
+                // Use Set for better performance when checking membership
+                const citiesInRangeSet = new Set(citiesInRange);
+                
                 // Check if the displayed cities match the cities in range
                 const displayedCitiesMatch = 
                     currentTimezones.length === citiesInRange.length &&
-                    currentTimezones.every(tz => citiesInRange.includes(tz));
+                    currentTimezones.every(tz => citiesInRangeSet.has(tz));
                 
                 // If displayed cities don't match, re-render
                 if (!displayedCitiesMatch) {
@@ -1315,7 +1318,7 @@
                     const timezone = card.getAttribute('data-timezone');
                     
                     // Only update cards for cities that are still in range
-                    if (!citiesInRange.includes(timezone)) return;
+                    if (!citiesInRangeSet.has(timezone)) return;
                     
                     const newYear = getNextNewYear(timezone);
                     
