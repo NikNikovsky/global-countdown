@@ -541,7 +541,17 @@
             try {
                 const stored = localStorage.getItem('selectedCities');
                 if (stored) {
-                    return JSON.parse(stored);
+                    const parsed = JSON.parse(stored);
+                    // Migrate old format (array of timezone strings) to new format (array of city objects)
+                    if (parsed.length > 0 && typeof parsed[0] === 'string') {
+                        const migrated = parsed.map(tzZone => {
+                            const found = availableTimezones.find(tz => tz.zone === tzZone);
+                            return found || { name: getFriendlyTimezoneName(tzZone), zone: tzZone };
+                        });
+                        saveSelectedCities(migrated);
+                        return migrated;
+                    }
+                    return parsed;
                 }
             } catch (e) {
                 console.error('Error reading localStorage:', e);
@@ -549,21 +559,26 @@
             
             // Default: user timezone + 2 others (New York and Tokyo)
             const userTz = getUserTimezone();
-            const defaults = [userTz];
+            const userCity = availableTimezones.find(tz => tz.zone === userTz) || 
+                { name: getFriendlyTimezoneName(userTz), zone: userTz };
+            const defaults = [userCity];
             
             // Add New York if not user's timezone
             if (userTz !== 'America/New_York') {
-                defaults.push('America/New_York');
+                const nyCity = availableTimezones.find(tz => tz.zone === 'America/New_York');
+                if (nyCity) defaults.push(nyCity);
             }
             
             // Add Tokyo if not user's timezone
             if (userTz !== 'Asia/Tokyo') {
-                defaults.push('Asia/Tokyo');
+                const tokyoCity = availableTimezones.find(tz => tz.zone === 'Asia/Tokyo');
+                if (tokyoCity) defaults.push(tokyoCity);
             }
             
             // If user is in both NY and Tokyo (impossible but safe), add London
             if (defaults.length === 1) {
-                defaults.push('Europe/London');
+                const londonCity = availableTimezones.find(tz => tz.zone === 'Europe/London');
+                if (londonCity) defaults.push(londonCity);
             }
             
             return defaults;
@@ -574,21 +589,23 @@
             localStorage.setItem('selectedCities', JSON.stringify(cities));
         }
 
-        // Add a city
-        function addCity(timezone) {
+        // Add a city (now accepts city object with name and zone)
+        function addCity(cityObj) {
             const selected = getSelectedCities();
-            if (!selected.includes(timezone)) {
-                selected.push(timezone);
+            // Check if this exact city (by name and zone) is already selected
+            const exists = selected.some(city => city.name === cityObj.name && city.zone === cityObj.zone);
+            if (!exists) {
+                selected.push(cityObj);
                 saveSelectedCities(selected);
                 renderTimezones();
             }
             closeCityModal();
         }
 
-        // Remove a city
-        function removeCity(timezone) {
+        // Remove a city (now accepts city object with name and zone)
+        function removeCity(cityObj) {
             const selected = getSelectedCities();
-            const filtered = selected.filter(tz => tz !== timezone);
+            const filtered = selected.filter(city => !(city.name === cityObj.name && city.zone === cityObj.zone));
             saveSelectedCities(filtered);
             renderTimezones();
         }
@@ -623,12 +640,13 @@
             );
             
             filteredTimezones.forEach(tz => {
-                const isSelected = selected.includes(tz.zone);
+                // Check if this exact city is already selected
+                const isSelected = selected.some(city => city.name === tz.name && city.zone === tz.zone);
                 const div = document.createElement('div');
                 div.className = 'city-option';
                 div.textContent = `${tz.name} ${isSelected ? '✓' : ''}`;
                 if (!isSelected) {
-                    div.onclick = () => addCity(tz.zone);
+                    div.onclick = () => addCity(tz);
                 } else {
                     div.style.opacity = '0.5';
                     div.style.cursor = 'default';
@@ -893,6 +911,20 @@
         let cachedIsNYEorNYD = null;
         let lastDateCheckTime = 0;
 
+        // Check if user's timezone has passed noon on January 1st
+        function userTimezonePassedNoon() {
+            const userTimezone = getUserTimezone();
+            const userTime = getTimeInTimezone(userTimezone);
+            if (!userTime) return false;
+            
+            const month = userTime.getMonth();
+            const date = userTime.getDate();
+            const hours = userTime.getHours();
+            
+            // Return true if user is on Jan 1st and past noon (12:00)
+            return month === 0 && date === 1 && hours >= 12;
+        }
+
         // Check if all cities have passed noon on January 1st
         function allCitiesPassedNoon() {
             const selectedCities = getSelectedCities();
@@ -912,6 +944,28 @@
             }
             
             return true;
+        }
+        
+        // Get cities that are still in the celebration range (before noon on Jan 1st)
+        function getCitiesInRange() {
+            const selectedCities = getSelectedCities();
+            const citiesInRange = [];
+            
+            for (const city of selectedCities) {
+                const cityTime = getTimeInTimezone(city.zone);
+                if (!cityTime) continue;
+                
+                const month = cityTime.getMonth();
+                const date = cityTime.getDate();
+                const hours = cityTime.getHours();
+                
+                // Include cities that are on Jan 1st before noon
+                if (month === 0 && date === 1 && hours < 12) {
+                    citiesInRange.push(city);
+                }
+            }
+            
+            return citiesInRange;
         }
 
         // Check if time remaining is within the window for midnight notifications
@@ -1026,35 +1080,88 @@
                 return;
             }
 
-            // Check if all cities have passed noon on January 1st
-            if (allCitiesPassedNoon()) {
+            // Check if user's timezone has passed noon on January 1st
+            if (userTimezonePassedNoon()) {
+                const citiesInRange = getCitiesInRange();
+                
+                // If there are no cities still in range, show user's timezone card in center
+                if (citiesInRange.length === 0) {
+                    const nextDec31 = getNextDec31();
+                    if (nextDec31) {
+                        const now = Date.now();
+                        const timeRemaining = nextDec31.getTime() - now;
+                        const countdown = formatCountdown(timeRemaining, userTimezone);
+                        
+                        // Show centered message with user timezone card below
+                        contentDiv.innerHTML = `
+                            <div class="message">
+                                <p>👋 See you next year!</p>
+                                <div class="countdown" style="margin-top: 20px;">${countdown.display}</div>
+                                <p style="margin-top: 10px; font-size: 0.8em;">until the next New Year's Eve</p>
+                            </div>
+                        `;
+                        
+                        // Add user's timezone card in center
+                        const userSection = document.createElement('div');
+                        userSection.className = 'user-timezone-section';
+                        userSection.style.marginTop = '30px';
+                        
+                        const userCity = availableTimezones.find(tz => tz.zone === userTimezone) || 
+                            { name: getFriendlyTimezoneName(userTimezone), zone: userTimezone };
+                        const userCard = createTimezoneCard(userCity, userTimezone, now, true);
+                        if (userCard) {
+                            userSection.appendChild(userCard);
+                            contentDiv.appendChild(userSection);
+                        }
+                    }
+                    return;
+                }
+                
+                // Otherwise, show "see you next year" message with cities still in range
                 const nextDec31 = getNextDec31();
+                let countdownHtml = '';
                 if (nextDec31) {
                     const now = Date.now();
                     const timeRemaining = nextDec31.getTime() - now;
                     const countdown = formatCountdown(timeRemaining, userTimezone);
-                    
-                    contentDiv.innerHTML = `
-                        <div class="message">
-                            <p>👋 See you next December 31st!</p>
-                            <div class="countdown" style="margin-top: 20px;">${countdown.display}</div>
-                            <p style="margin-top: 10px; font-size: 0.8em;">until the next New Year's Eve</p>
-                        </div>
+                    countdownHtml = `
+                        <div class="countdown" style="margin-top: 20px;">${countdown.display}</div>
+                        <p style="margin-top: 10px; font-size: 0.8em;">until the next New Year's Eve</p>
                     `;
                 }
+                
+                contentDiv.innerHTML = `
+                    <div class="message">
+                        <p>👋 See you next year!</p>
+                        ${countdownHtml}
+                    </div>
+                `;
+                
+                // Show cities still in range below the message
+                const otherLabel = document.createElement('div');
+                otherLabel.className = 'other-timezones-label';
+                otherLabel.style.marginTop = '30px';
+                otherLabel.textContent = 'Cities Still Celebrating';
+                contentDiv.appendChild(otherLabel);
+                
+                const timezoneList = document.createElement('div');
+                timezoneList.className = 'timezone-list';
+                
+                const now = Date.now();
+                citiesInRange.forEach(city => {
+                    const card = createTimezoneCard(city, userTimezone, now, false);
+                    if (card) timezoneList.appendChild(card);
+                });
+                
+                contentDiv.appendChild(timezoneList);
                 return;
             }
 
             const selectedCities = getSelectedCities();
             const now = Date.now();
 
-            // Build timezone objects for selected cities
-            const timezonesToDisplay = selectedCities.map(tzZone => {
-                return {
-                    name: getFriendlyTimezoneName(tzZone),
-                    zone: tzZone
-                };
-            });
+            // Build timezone objects for selected cities (already have name and zone)
+            const timezonesToDisplay = selectedCities;
 
             // Sort: user timezone first, then by how close to New Year
             const sortedTimezones = timezonesToDisplay.sort((a, b) => {
@@ -1075,24 +1182,25 @@
                 return aTime - bTime;
             });
 
-            // Separate user timezone from others
-            const userTz = sortedTimezones.find(tz => tz.zone === userTimezone);
-            const otherTimezones = sortedTimezones.filter(tz => tz.zone !== userTimezone);
+            // Separate user timezone cities from others
+            const userCities = sortedTimezones.filter(tz => tz.zone === userTimezone);
+            const otherCities = sortedTimezones.filter(tz => tz.zone !== userTimezone);
 
             contentDiv.innerHTML = '';
 
-            // Render user timezone section
-            if (userTz) {
+            // Render user timezone section (show first user city if any)
+            if (userCities.length > 0) {
                 const userSection = document.createElement('div');
                 userSection.className = 'user-timezone-section';
                 
-                const userCard = createTimezoneCard(userTz, userTimezone, now, true);
+                const userCard = createTimezoneCard(userCities[0], userTimezone, now, true);
                 userSection.appendChild(userCard);
                 contentDiv.appendChild(userSection);
             }
 
-            // Render other timezones section
-            if (otherTimezones.length > 0) {
+            // Render other timezones section (including other user cities if multiple)
+            const citiesToDisplay = [...userCities.slice(1), ...otherCities];
+            if (citiesToDisplay.length > 0) {
                 const otherLabel = document.createElement('div');
                 otherLabel.className = 'other-timezones-label';
                 otherLabel.textContent = 'Other Locations';
@@ -1101,7 +1209,7 @@
                 const timezoneList = document.createElement('div');
                 timezoneList.className = 'timezone-list';
                 
-                otherTimezones.forEach(tz => {
+                citiesToDisplay.forEach(tz => {
                     const card = createTimezoneCard(tz, userTimezone, now, false);
                     if (card) timezoneList.appendChild(card);
                 });
@@ -1138,6 +1246,7 @@
             const card = document.createElement('div');
             card.className = `timezone-card ${isUserTz ? 'user-timezone' : ''}`;
             card.setAttribute('data-timezone', tz.zone);
+            card.setAttribute('data-city', JSON.stringify(tz));
             
             // Create timezone name
             const nameDiv = document.createElement('div');
@@ -1180,7 +1289,7 @@
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'delete-btn';
                 removeBtn.textContent = '🗑️ Remove';
-                removeBtn.onclick = () => removeCity(tz.zone);
+                removeBtn.onclick = () => removeCity(tz);
                 card.appendChild(removeBtn);
             }
             
@@ -1188,9 +1297,106 @@
         }
 
         function updateCountdowns() {
-            // Check if all cities passed noon and re-render if so
-            if (allCitiesPassedNoon()) {
-                renderTimezones();
+            // Check if user's timezone passed noon and re-render if so
+            if (userTimezonePassedNoon()) {
+                // When user passes noon, we need to check if cities are still in range
+                // If the view has changed (cities dropped out of range), re-render
+                const citiesInRange = getCitiesInRange();
+                const currentCards = document.querySelectorAll('.timezone-card');
+                
+                // Get currently displayed cities as objects
+                const currentCities = Array.from(currentCards).map(card => {
+                    try {
+                        return JSON.parse(card.getAttribute('data-city'));
+                    } catch (e) {
+                        return { zone: card.getAttribute('data-timezone') };
+                    }
+                });
+                
+                // Create a set of city identifiers for fast lookup (name+zone)
+                const citiesInRangeIds = new Set(citiesInRange.map(c => `${c.name}|${c.zone}`));
+                const currentCityIds = currentCities.map(c => `${c.name}|${c.zone}`);
+                
+                // Check if the displayed cities match the cities in range
+                const displayedCitiesMatch = 
+                    currentCityIds.length === citiesInRange.length &&
+                    currentCityIds.every(id => citiesInRangeIds.has(id));
+                
+                // If displayed cities don't match, re-render
+                if (!displayedCitiesMatch) {
+                    renderTimezones();
+                    return;
+                }
+                
+                // Otherwise, just update the countdowns for cities in range
+                const now = Date.now();
+                
+                // Update the "see you next year" countdown
+                const contentDiv = document.getElementById('content');
+                const messageCountdown = contentDiv.querySelector('.message .countdown');
+                if (messageCountdown) {
+                    const nextDec31 = getNextDec31();
+                    if (nextDec31) {
+                        const timeRemaining = nextDec31.getTime() - now;
+                        const countdown = formatCountdown(timeRemaining, getUserTimezone());
+                        messageCountdown.textContent = countdown.display;
+                    }
+                }
+                
+                // Update cards for cities still in range
+                currentCards.forEach(card => {
+                    const timezone = card.getAttribute('data-timezone');
+                    let cityObj;
+                    try {
+                        cityObj = JSON.parse(card.getAttribute('data-city'));
+                    } catch (e) {
+                        // Fallback for cards without city data
+                        cityObj = { name: getFriendlyTimezoneName(timezone), zone: timezone };
+                    }
+                    
+                    // Only update cards for cities that are still in range
+                    const cityId = `${cityObj.name}|${cityObj.zone}`;
+                    if (!citiesInRangeIds.has(cityId)) return;
+                    
+                    const newYear = getNextNewYear(timezone);
+                    
+                    if (!newYear) return;
+                    
+                    const timeRemaining = newYear.getTime() - now;
+                    const countdown = formatCountdown(timeRemaining, timezone);
+                    
+                    // Trigger confetti if just hit midnight
+                    if (countdown.justHitMidnight && !confettiShown.has(timezone)) {
+                        confettiShown.add(timezone);
+                        createConfetti();
+                    }
+                    
+                    const countdownDiv = card.querySelector('.countdown');
+                    if (countdownDiv) {
+                        if (countdown.isCelebrating) {
+                            countdownDiv.className = 'countdown celebration';
+                            countdownDiv.innerHTML = countdown.display;
+                        } else {
+                            countdownDiv.className = 'countdown';
+                            countdownDiv.innerHTML = `${countdown.display}<span class="countdown-label">until New Year</span>`;
+                        }
+                    }
+                    
+                    const localTimeDiv = card.querySelector('.local-time');
+                    if (localTimeDiv) {
+                        const localTimeStr = new Date().toLocaleString('en-US', {
+                            timeZone: timezone,
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true
+                        });
+                        localTimeDiv.textContent = localTimeStr;
+                    }
+                });
+                
                 return;
             }
             
@@ -1249,23 +1455,7 @@
         // Update every second
         if (isDecember31stOrJanuary1st()) {
             setInterval(() => {
-                // If we're showing the "See you next Dec 31" message, update it
-                const contentDiv = document.getElementById('content');
-                if (contentDiv.querySelector('.message') && allCitiesPassedNoon()) {
-                    const nextDec31 = getNextDec31();
-                    if (nextDec31) {
-                        const now = Date.now();
-                        const timeRemaining = nextDec31.getTime() - now;
-                        const countdown = formatCountdown(timeRemaining, getUserTimezone());
-                        
-                        const countdownDiv = contentDiv.querySelector('.countdown');
-                        if (countdownDiv && countdown) {
-                            countdownDiv.textContent = countdown.display;
-                        }
-                    }
-                } else {
-                    updateCountdowns();
-                }
+                updateCountdowns();
             }, 1000);
         }
     </script>
