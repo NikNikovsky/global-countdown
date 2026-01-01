@@ -1350,7 +1350,8 @@
                     try {
                         cityObj = JSON.parse(card.getAttribute('data-city'));
                     } catch (e) {
-                        cityObj = { zone: timezone };
+                        // Fallback for cards without city data
+                        cityObj = { name: getFriendlyTimezoneName(timezone), zone: timezone };
                     }
                     
                     // Only update cards for cities that are still in range
