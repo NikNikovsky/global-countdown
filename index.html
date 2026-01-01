@@ -1279,8 +1279,18 @@
                 const citiesInRange = getCitiesInRange();
                 const currentCards = document.querySelectorAll('.timezone-card');
                 
-                // If number of cards doesn't match cities in range, re-render
-                if (currentCards.length !== citiesInRange.length) {
+                // Get currently displayed timezones
+                const currentTimezones = Array.from(currentCards).map(card => 
+                    card.getAttribute('data-timezone')
+                );
+                
+                // Check if the displayed cities match the cities in range
+                const displayedCitiesMatch = 
+                    currentTimezones.length === citiesInRange.length &&
+                    currentTimezones.every(tz => citiesInRange.includes(tz));
+                
+                // If displayed cities don't match, re-render
+                if (!displayedCitiesMatch) {
                     renderTimezones();
                     return;
                 }
@@ -1303,6 +1313,10 @@
                 // Update cards for cities still in range
                 currentCards.forEach(card => {
                     const timezone = card.getAttribute('data-timezone');
+                    
+                    // Only update cards for cities that are still in range
+                    if (!citiesInRange.includes(timezone)) return;
+                    
                     const newYear = getNextNewYear(timezone);
                     
                     if (!newYear) return;
