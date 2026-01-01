@@ -893,6 +893,20 @@
         let cachedIsNYEorNYD = null;
         let lastDateCheckTime = 0;
 
+        // Check if user's timezone has passed noon on January 1st
+        function userTimezonePassedNoon() {
+            const userTimezone = getUserTimezone();
+            const userTime = getTimeInTimezone(userTimezone);
+            if (!userTime) return false;
+            
+            const month = userTime.getMonth();
+            const date = userTime.getDate();
+            const hours = userTime.getHours();
+            
+            // Return true if user is on Jan 1st and past noon (12:00)
+            return month === 0 && date === 1 && hours >= 12;
+        }
+
         // Check if all cities have passed noon on January 1st
         function allCitiesPassedNoon() {
             const selectedCities = getSelectedCities();
@@ -912,6 +926,28 @@
             }
             
             return true;
+        }
+        
+        // Get cities that are still in the celebration range (before noon on Jan 1st)
+        function getCitiesInRange() {
+            const selectedCities = getSelectedCities();
+            const citiesInRange = [];
+            
+            for (const cityZone of selectedCities) {
+                const cityTime = getTimeInTimezone(cityZone);
+                if (!cityTime) continue;
+                
+                const month = cityTime.getMonth();
+                const date = cityTime.getDate();
+                const hours = cityTime.getHours();
+                
+                // Include cities that are on Jan 1st before noon
+                if (month === 0 && date === 1 && hours < 12) {
+                    citiesInRange.push(cityZone);
+                }
+            }
+            
+            return citiesInRange;
         }
 
         // Check if time remaining is within the window for midnight notifications
@@ -1026,22 +1062,70 @@
                 return;
             }
 
-            // Check if all cities have passed noon on January 1st
-            if (allCitiesPassedNoon()) {
+            // Check if user's timezone has passed noon on January 1st
+            if (userTimezonePassedNoon()) {
+                const citiesInRange = getCitiesInRange();
+                
+                // If there are no cities still in range, show simple "see you next year" message
+                if (citiesInRange.length === 0) {
+                    const nextDec31 = getNextDec31();
+                    if (nextDec31) {
+                        const now = Date.now();
+                        const timeRemaining = nextDec31.getTime() - now;
+                        const countdown = formatCountdown(timeRemaining, userTimezone);
+                        
+                        contentDiv.innerHTML = `
+                            <div class="message">
+                                <p>👋 See you next year!</p>
+                                <div class="countdown" style="margin-top: 20px;">${countdown.display}</div>
+                                <p style="margin-top: 10px; font-size: 0.8em;">until the next New Year's Eve</p>
+                            </div>
+                        `;
+                    }
+                    return;
+                }
+                
+                // Otherwise, show "see you next year" message with cities still in range
                 const nextDec31 = getNextDec31();
+                let countdownHtml = '';
                 if (nextDec31) {
                     const now = Date.now();
                     const timeRemaining = nextDec31.getTime() - now;
                     const countdown = formatCountdown(timeRemaining, userTimezone);
-                    
-                    contentDiv.innerHTML = `
-                        <div class="message">
-                            <p>👋 See you next December 31st!</p>
-                            <div class="countdown" style="margin-top: 20px;">${countdown.display}</div>
-                            <p style="margin-top: 10px; font-size: 0.8em;">until the next New Year's Eve</p>
-                        </div>
+                    countdownHtml = `
+                        <div class="countdown" style="margin-top: 20px;">${countdown.display}</div>
+                        <p style="margin-top: 10px; font-size: 0.8em;">until the next New Year's Eve</p>
                     `;
                 }
+                
+                contentDiv.innerHTML = `
+                    <div class="message">
+                        <p>👋 See you next year!</p>
+                        ${countdownHtml}
+                    </div>
+                `;
+                
+                // Show cities still in range below the message
+                const otherLabel = document.createElement('div');
+                otherLabel.className = 'other-timezones-label';
+                otherLabel.style.marginTop = '30px';
+                otherLabel.textContent = 'Cities Still Celebrating';
+                contentDiv.appendChild(otherLabel);
+                
+                const timezoneList = document.createElement('div');
+                timezoneList.className = 'timezone-list';
+                
+                const now = Date.now();
+                citiesInRange.forEach(tzZone => {
+                    const tz = {
+                        name: getFriendlyTimezoneName(tzZone),
+                        zone: tzZone
+                    };
+                    const card = createTimezoneCard(tz, userTimezone, now, false);
+                    if (card) timezoneList.appendChild(card);
+                });
+                
+                contentDiv.appendChild(timezoneList);
                 return;
             }
 
@@ -1188,9 +1272,76 @@
         }
 
         function updateCountdowns() {
-            // Check if all cities passed noon and re-render if so
-            if (allCitiesPassedNoon()) {
-                renderTimezones();
+            // Check if user's timezone passed noon and re-render if so
+            if (userTimezonePassedNoon()) {
+                // When user passes noon, we need to check if cities are still in range
+                // If the view has changed (cities dropped out of range), re-render
+                const citiesInRange = getCitiesInRange();
+                const currentCards = document.querySelectorAll('.timezone-card');
+                
+                // If number of cards doesn't match cities in range, re-render
+                if (currentCards.length !== citiesInRange.length) {
+                    renderTimezones();
+                    return;
+                }
+                
+                // Otherwise, just update the countdowns for cities in range
+                const now = Date.now();
+                
+                // Update the "see you next year" countdown
+                const contentDiv = document.getElementById('content');
+                const messageCountdown = contentDiv.querySelector('.message .countdown');
+                if (messageCountdown) {
+                    const nextDec31 = getNextDec31();
+                    if (nextDec31) {
+                        const timeRemaining = nextDec31.getTime() - now;
+                        const countdown = formatCountdown(timeRemaining, getUserTimezone());
+                        messageCountdown.textContent = countdown.display;
+                    }
+                }
+                
+                // Update cards for cities still in range
+                currentCards.forEach(card => {
+                    const timezone = card.getAttribute('data-timezone');
+                    const newYear = getNextNewYear(timezone);
+                    
+                    if (!newYear) return;
+                    
+                    const timeRemaining = newYear.getTime() - now;
+                    const countdown = formatCountdown(timeRemaining, timezone);
+                    
+                    // Trigger confetti if just hit midnight
+                    if (countdown.justHitMidnight && !confettiShown.has(timezone)) {
+                        confettiShown.add(timezone);
+                        createConfetti();
+                    }
+                    
+                    const countdownDiv = card.querySelector('.countdown');
+                    if (countdownDiv) {
+                        if (countdown.isCelebrating) {
+                            countdownDiv.className = 'countdown celebration';
+                            countdownDiv.innerHTML = countdown.display;
+                        } else {
+                            countdownDiv.className = 'countdown';
+                            countdownDiv.innerHTML = `${countdown.display}<span class="countdown-label">until New Year</span>`;
+                        }
+                    }
+                    
+                    const localTimeDiv = card.querySelector('.local-time');
+                    if (localTimeDiv) {
+                        const localTimeStr = new Date().toLocaleString('en-US', {
+                            timeZone: timezone,
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true
+                        });
+                        localTimeDiv.textContent = localTimeStr;
+                    }
+                });
+                
                 return;
             }
             
@@ -1249,23 +1400,7 @@
         // Update every second
         if (isDecember31stOrJanuary1st()) {
             setInterval(() => {
-                // If we're showing the "See you next Dec 31" message, update it
-                const contentDiv = document.getElementById('content');
-                if (contentDiv.querySelector('.message') && allCitiesPassedNoon()) {
-                    const nextDec31 = getNextDec31();
-                    if (nextDec31) {
-                        const now = Date.now();
-                        const timeRemaining = nextDec31.getTime() - now;
-                        const countdown = formatCountdown(timeRemaining, getUserTimezone());
-                        
-                        const countdownDiv = contentDiv.querySelector('.countdown');
-                        if (countdownDiv && countdown) {
-                            countdownDiv.textContent = countdown.display;
-                        }
-                    }
-                } else {
-                    updateCountdowns();
-                }
+                updateCountdowns();
             }, 1000);
         }
     </script>
