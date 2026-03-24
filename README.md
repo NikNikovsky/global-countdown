@@ -1,4 +1,5 @@
 # global-countdown
+[![AI Slop Inside](https://sladge.net/badge.svg)](https://sladge.net)
 
 A global New Year's countdown timer built with Svelte + Vite that shows real-time countdowns to midnight across multiple timezones around the world.
 
