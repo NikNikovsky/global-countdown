@@ -14,6 +14,7 @@
     getNextDec31
   } from './lib/dateUtils.js';
   import { createConfetti, showNotificationPopup, updateTabTitle } from './lib/effects.js';
+  import { startTick, stopTick } from './lib/tick.js';
 
   let showModal = false;
   let debugMode = false;
@@ -32,15 +33,33 @@
     originalTitle = document.title;
     const params = new URLSearchParams(window.location.search);
     debugMode = params.get('debug') === '1' || params.get('debug') === 'true';
+
+    const citiesParam = params.get('cities');
+    if (citiesParam) {
+      const parsed = citiesParam.split(',').map(part => {
+        const [name, zone] = part.split('::');
+        if (!name || !zone) return null;
+        return { name: decodeURIComponent(name), zone: decodeURIComponent(zone) };
+      }).filter(Boolean);
+      if (parsed.length) {
+        selectedCities = parsed;
+        saveSelectedCities(parsed);
+      } else {
+        selectedCities = getSelectedCities();
+      }
+    } else {
+      selectedCities = getSelectedCities();
+    }
+
     userTimezone = getUserTimezone();
-    selectedCities = getSelectedCities();
     if (debugMode && selectedCities.length === 0) {
       selectedCities = availableTimezones.slice(0, 6);
     }
-    
+
+    startTick();
     renderContent();
-    
-    if (isDecember31stOrJanuary1st()) {
+
+    if (isDecember31stOrJanuary1st() || debugMode) {
       updateInterval = setInterval(() => {
         updateCountdowns();
       }, 1000);
@@ -48,6 +67,7 @@
   });
 
   onDestroy(() => {
+    stopTick();
     if (updateInterval) {
       clearInterval(updateInterval);
     }
@@ -55,6 +75,14 @@
 
   function openCityModal() {
     showModal = true;
+  }
+
+  function copyShareLink() {
+    const cities = selectedCities.map(c => `${encodeURIComponent(c.name)}::${encodeURIComponent(c.zone)}`).join(',');
+    const url = `${window.location.origin}${window.location.pathname}?cities=${cities}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).catch(() => {});
+    }
   }
 
   function closeCityModal() {
@@ -217,6 +245,7 @@
   {:else if contentType === 'goodbye'}
     <div class="controls">
       <button class="add-city-btn" on:click={openCityModal}>➕ Add City</button>
+      <button class="add-city-btn" on:click={copyShareLink}>🔗 Copy link</button>
     </div>
     
     <div class="message">
@@ -245,6 +274,7 @@
   {:else}
     <div class="controls">
       <button class="add-city-btn" on:click={openCityModal}>➕ Add City</button>
+      <button class="add-city-btn" on:click={copyShareLink}>🔗 Copy link</button>
     </div>
 
     {#if countdownData.userCity}

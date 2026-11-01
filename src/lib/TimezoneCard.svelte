@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+  import { now } from './tick.js';
   import { getNextNewYear, formatCountdown, getTimeInTimezone } from './dateUtils.js';
   import { createConfetti } from './effects.js';
 
@@ -11,25 +12,23 @@
   
   let countdown = { display: '', isCelebrating: false, justHitMidnight: false };
   let localTimeStr = '';
-  let updateInterval;
 
   function updateCard() {
     const newYear = getNextNewYear(city.zone);
     if (!newYear) return;
-    
-    const now = Date.now();
-    const timeRemaining = newYear.getTime() - now;
+
+    const timeRemaining = newYear.getTime() - $now;
     countdown = formatCountdown(timeRemaining, city.zone);
-    
+
     // Trigger confetti if just hit midnight
     if (countdown.justHitMidnight && !confettiShown.has(city.zone)) {
       confettiShown.add(city.zone);
       confettiShown = confettiShown; // Trigger reactivity
       createConfetti();
     }
-    
+
     // Update local time
-    localTimeStr = new Date().toLocaleString('en-US', {
+    localTimeStr = new Date($now).toLocaleString('en-US', {
       timeZone: city.zone,
       month: 'short',
       day: 'numeric',
@@ -40,15 +39,10 @@
     });
   }
 
+  $: if ($now) updateCard();
+
   onMount(() => {
     updateCard();
-    updateInterval = setInterval(updateCard, 1000);
-  });
-
-  onDestroy(() => {
-    if (updateInterval) {
-      clearInterval(updateInterval);
-    }
   });
 
   function handleRemove() {
