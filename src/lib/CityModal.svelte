@@ -1,11 +1,36 @@
 <script>
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { availableTimezones } from './timezones.js';
 
   export let selectedCities = [];
 
   const dispatch = createEventDispatcher();
   let searchTerm = '';
+  let searchInput;
+
+  onMount(() => {
+    searchInput?.focus();
+  });
+
+  function handleKeydown(event) {
+    if (event.key === 'Escape') {
+      handleClose();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const modal = event.currentTarget;
+    const focusable = modal.querySelectorAll('button, input, [tabindex]:not([tabindex="-1"])');
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   function handleClose() {
     dispatch('close');
@@ -34,7 +59,7 @@
   aria-label="Add a city"
   tabindex="-1"
   on:click={(e) => e.target === e.currentTarget && handleClose()}
-  on:keydown={(e) => e.key === 'Escape' && handleClose()}
+  on:keydown={handleKeydown}
 >
   <div class="modal-content">
     <div class="modal-header">Add a City</div>
@@ -44,6 +69,7 @@
       placeholder="🔍 Search cities..."
       aria-label="Search cities"
       bind:value={searchTerm}
+      bind:this={searchInput}
     />
     <div class="city-list">
       {#each filteredCities as city}

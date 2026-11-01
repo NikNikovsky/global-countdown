@@ -59,7 +59,7 @@
     {/if}
   </div>
   
-  <div class="countdown" class:celebration={countdown.isCelebrating}>
+  <div class="countdown" class:celebration={countdown.isCelebrating} aria-live="polite" role="timer">
     {countdown.display}
     {#if !countdown.isCelebrating}
       <span class="countdown-label">until New Year</span>
