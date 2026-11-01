@@ -3,6 +3,9 @@ const FADE_OUT_DURATION = 500; // 0.5 seconds
 const TAB_TITLE_DURATION = 10000; // 10 seconds
 
 export function createConfetti() {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return;
+  }
   const container = document.getElementById('confettiContainer');
   if (!container) return;
   

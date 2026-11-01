@@ -6,16 +6,29 @@ export function getSelectedCities() {
     const stored = localStorage.getItem('selectedCities');
     if (stored) {
       const parsed = JSON.parse(stored);
+      // Validate shape: must be an array of {name, zone} objects
+      const isValid = Array.isArray(parsed) && parsed.every(item =>
+        item && typeof item === 'object' && !Array.isArray(item) &&
+        typeof item.name === 'string' && typeof item.zone === 'string' &&
+        item.name.length > 0 && item.zone.length > 0
+      );
       // Migrate old format (array of timezone strings) to new format (array of city objects)
-      if (parsed.length > 0 && typeof parsed[0] === 'string') {
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
         const migrated = parsed.map(tzZone => {
+          if (typeof tzZone !== 'string' || tzZone.length === 0) {
+            return null;
+          }
           const found = availableTimezones.find(tz => tz.zone === tzZone);
           return found || { name: getFriendlyTimezoneName(tzZone), zone: tzZone };
-        });
+        }).filter(Boolean);
         saveSelectedCities(migrated);
         return migrated;
       }
-      return parsed;
+      if (!isValid) {
+        console.warn('Invalid selectedCities in localStorage; ignoring.');
+      } else {
+        return parsed;
+      }
     }
   } catch (e) {
     console.error('Error reading localStorage:', e);
