@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import TimezoneCard from './lib/TimezoneCard.svelte';
   import CityModal from './lib/CityModal.svelte';
+  import WorldMap from './lib/WorldMap.svelte';
   import { availableTimezones, getUserTimezone, getFriendlyTimezoneName } from './lib/timezones.js';
   import { getSelectedCities, saveSelectedCities } from './lib/storage.js';
   import { 
@@ -15,6 +16,7 @@
   import { createConfetti, showNotificationPopup, updateTabTitle } from './lib/effects.js';
 
   let showModal = false;
+  let debugMode = false;
   let selectedCities = [];
   let userTimezone = '';
   let contentType = 'countdown'; // 'countdown', 'goodbye', 'not-active'
@@ -28,8 +30,13 @@
 
   onMount(() => {
     originalTitle = document.title;
+    const params = new URLSearchParams(window.location.search);
+    debugMode = params.get('debug') === '1' || params.get('debug') === 'true';
     userTimezone = getUserTimezone();
     selectedCities = getSelectedCities();
+    if (debugMode && selectedCities.length === 0) {
+      selectedCities = availableTimezones.slice(0, 6);
+    }
     
     renderContent();
     
@@ -77,7 +84,7 @@
   }
 
   function renderContent() {
-    if (!isDecember31stOrJanuary1st()) {
+    if (!debugMode && !isDecember31stOrJanuary1st()) {
       contentType = 'not-active';
       return;
     }
@@ -195,7 +202,12 @@
     <h1>🎉 Global New Year Countdown 🎉</h1>
     <p class="subtitle">Watch the New Year arrive around the world!</p>
     <p class="detected-timezone">Your location: {userCityName}</p>
+    {#if debugMode}
+      <p class="detected-timezone">Debug mode enabled</p>
+    {/if}
   </header>
+
+  <WorldMap />
 
   {#if contentType === 'not-active'}
     <div class="message">
@@ -224,7 +236,6 @@
           <TimezoneCard 
             city={city} 
             isUser={city.isUser}
-            userTimezone={userTimezone}
             on:remove={handleRemoveCity}
             bind:confettiShown
           />
@@ -241,7 +252,6 @@
         <TimezoneCard 
           city={countdownData.userCity} 
           isUser={true}
-          userTimezone={userTimezone}
           on:remove={handleRemoveCity}
           bind:confettiShown
         />
@@ -255,7 +265,6 @@
           <TimezoneCard 
             city={city} 
             isUser={false}
-            userTimezone={userTimezone}
             on:remove={handleRemoveCity}
             bind:confettiShown
           />
@@ -282,7 +291,9 @@
 
   :global(body) {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 12s ease infinite;
     color: #fff;
     min-height: 100vh;
     padding: 20px;

@@ -5,7 +5,6 @@
 
   export let city;
   export let isUser;
-  export let userTimezone;
   export let confettiShown = new Set();
 
   const dispatch = createEventDispatcher();
@@ -87,11 +86,13 @@
     backdrop-filter: blur(10px);
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
     border: 1px solid rgba(255, 255, 255, 0.18);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: popIn 0.4s ease both;
   }
 
   .timezone-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-8px);
+    box-shadow: 0 16px 40px 0 rgba(31, 38, 135, 0.5);
   }
 
   .timezone-card.user-timezone {

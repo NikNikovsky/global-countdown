@@ -8,6 +8,8 @@ A global New Year's countdown timer built with Svelte + Vite that shows real-tim
 - 🌍 **Global Coverage**: Choose from 130+ cities worldwide
 - 📍 **Auto-Detection**: Automatically detects your browser's timezone and highlights it
 - 🎨 **Modern UI**: Built with Svelte for reactive, component-based architecture
+- 🗺️ **World Map**: Live world map coloring countries green once their new year has arrived
+- 🐞 **Debug Mode**: Append `?debug=1` to the URL to preview the countdown outside Dec 31/Jan 1
 - 📅 **Date-Specific**: Only active on December 31st and January 1st
 - ⏱️ **Real-Time**: Updates every second with live countdowns
 - 🎊 **Celebration Mode**: Shows special message and confetti when midnight arrives
@@ -21,7 +23,7 @@ Visit the live countdown at: [https://niknikovsky.github.io/global-countdown/](h
 ## Technologies Used
 
 - **Svelte 5** - Modern, reactive UI framework
-- **Vite 7** - Fast build tool and development server
+- **Vite 8** - Fast build tool and development server
 - **JavaScript Intl API** - Accurate timezone handling
 - **CSS Grid** - Responsive layout
 - **GitHub Actions** - Automated deployment to GitHub Pages
@@ -49,6 +51,9 @@ npm run dev
 
 The app will be available at `http://localhost:5173`
 
+### Debug Mode
+
+Append `?debug=1` to the URL (e.g. `http://localhost:5173/?debug=1`) to bypass the December 31/January 1 date gate and preview the countdown, cards, and world map on any date.
 ### Build
 
 ```bash
@@ -70,6 +75,7 @@ npm run preview
 │   └── lib/
 │       ├── TimezoneCard.svelte # Timezone card component
 │       ├── CityModal.svelte    # City selection modal
+│       ├── WorldMap.svelte     # World map component
 │       ├── timezones.js        # Timezone data
 │       ├── storage.js          # LocalStorage utilities
 │       ├── dateUtils.js        # Date calculations

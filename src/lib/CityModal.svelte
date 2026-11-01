@@ -27,26 +27,35 @@
   };
 </script>
 
-<div class="modal" on:click={handleClose}>
-  <div class="modal-content" on:click|stopPropagation>
+<div
+  class="modal"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Add a city"
+  tabindex="-1"
+  on:click={(e) => e.target === e.currentTarget && handleClose()}
+  on:keydown={(e) => e.key === 'Escape' && handleClose()}
+>
+  <div class="modal-content">
     <div class="modal-header">Add a City</div>
-    <input 
-      type="text" 
-      class="search-input" 
-      placeholder="🔍 Search cities..." 
-      aria-label="Search cities" 
+    <input
+      type="text"
+      class="search-input"
+      placeholder="🔍 Search cities..."
+      aria-label="Search cities"
       bind:value={searchTerm}
-      autofocus
     />
     <div class="city-list">
       {#each filteredCities as city}
-        <div 
-          class="city-option" 
+        <button
+          type="button"
+          class="city-option"
           class:selected={cityIsSelected(city)}
-          on:click={() => !cityIsSelected(city) && handleAddCity(city)}
+          disabled={cityIsSelected(city)}
+          on:click={() => handleAddCity(city)}
         >
           {city.name} {cityIsSelected(city) ? '✓' : ''}
-        </div>
+        </button>
       {/each}
     </div>
     <button class="modal-close" on:click={handleClose}>Close</button>
@@ -65,6 +74,7 @@
     z-index: 1000;
     align-items: center;
     justify-content: center;
+    animation: modalFade 0.2s ease;
   }
 
   .modal-content {
@@ -76,6 +86,7 @@
     max-height: 80vh;
     overflow-y: auto;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    animation: modalScale 0.25s ease;
   }
 
   .modal-header {
@@ -122,6 +133,9 @@
     backdrop-filter: blur(10px);
     border: 2px solid transparent;
     color: white;
+    font: inherit;
+    text-align: left;
+    width: 100%;
   }
 
   .city-option:hover {
