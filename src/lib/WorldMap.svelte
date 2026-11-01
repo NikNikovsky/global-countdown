@@ -6,14 +6,38 @@
   let greenCountries = new Set();
   let interval;
 
+  function getOffsetMinutes(timeZone, date) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      timeZoneName: 'shortOffset'
+    }).formatToParts(date);
+    const off = parts.find(p => p.type === 'timeZoneName')?.value || '';
+    const m = off.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+    if (!m) return 0;
+    const sign = m[1] === '+' ? 1 : -1;
+    const hours = parseInt(m[2], 10) || 0;
+    const mins = parseInt(m[3] || '0', 10) || 0;
+    return sign * (hours * 60 + mins);
+  }
+
   function updateColors() {
     const now = new Date();
     const green = new Set();
     for (const country of Object.values(ct.getAllCountries())) {
-      const tz = country.timezones && country.timezones[0];
-      if (!tz) continue;
-      const month = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: '2-digit' }).format(now);
-      // Green once the country's (primary) timezone is no longer in December
+      const zones = country.timezones || [];
+      if (!zones.length) continue;
+      // Consider the country as having entered the new year once its
+      // easternmost (earliest-celebrating) timezone has left December.
+      let easternmost = zones[0];
+      let maxOffset = getOffsetMinutes(easternmost, now);
+      for (const tz of zones.slice(1)) {
+        const off = getOffsetMinutes(tz, now);
+        if (off > maxOffset) {
+          maxOffset = off;
+          easternmost = tz;
+        }
+      }
+      const month = new Intl.DateTimeFormat('en-US', { timeZone: easternmost, month: '2-digit' }).format(now);
       if (month !== '12') {
         green.add(country.id);
       }
