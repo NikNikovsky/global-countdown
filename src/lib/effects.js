@@ -2,6 +2,53 @@ const NOTIFICATION_DISPLAY_DURATION = 5000; // 5 seconds
 const FADE_OUT_DURATION = 500; // 0.5 seconds
 const TAB_TITLE_DURATION = 10000; // 10 seconds
 
+const SOUND_KEY = 'soundEnabled';
+
+export function isSoundEnabled() {
+  try {
+    const stored = localStorage.getItem(SOUND_KEY);
+    if (stored === null) return true;
+    return stored === 'true';
+  } catch {
+    return true;
+  }
+}
+
+export function setSoundEnabled(enabled) {
+  try {
+    localStorage.setItem(SOUND_KEY, String(enabled));
+  } catch {
+    // ignore
+  }
+}
+
+export function playChime() {
+  if (!isSoundEnabled()) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, now + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.2, now + i * 0.15 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.15 + 0.35);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now + i * 0.15);
+      osc.stop(now + i * 0.15 + 0.4);
+    });
+    setTimeout(() => ctx.close(), 1200);
+  } catch {
+    // ignore audio errors
+  }
+}
+
 export function createConfetti() {
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     return;

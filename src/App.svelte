@@ -13,11 +13,12 @@
     getCitiesInRange,
     getNextDec31
   } from './lib/dateUtils.js';
-  import { createConfetti, showNotificationPopup, updateTabTitle } from './lib/effects.js';
+  import { createConfetti, showNotificationPopup, updateTabTitle, isSoundEnabled, setSoundEnabled, playChime } from './lib/effects.js';
   import { startTick, stopTick } from './lib/tick.js';
 
   let showModal = false;
   let debugMode = false;
+  let soundEnabled = true;
   let selectedCities = [];
   let userTimezone = '';
   let contentType = 'countdown'; // 'countdown', 'goodbye', 'not-active'
@@ -52,6 +53,7 @@
     }
 
     userTimezone = getUserTimezone();
+    soundEnabled = isSoundEnabled();
     if (debugMode && selectedCities.length === 0) {
       selectedCities = availableTimezones.slice(0, 6);
     }
@@ -75,6 +77,11 @@
 
   function openCityModal() {
     showModal = true;
+  }
+
+  function toggleSound() {
+    soundEnabled = !soundEnabled;
+    setSoundEnabled(soundEnabled);
   }
 
   function copyShareLink() {
@@ -214,6 +221,7 @@
       if (countdown.justHitMidnight) {
         offScreenNotificationsShown.add(timezone);
         createConfetti();
+        playChime();
         updateTabTitle(cityName, originalTitle);
         showNotificationPopup(cityName);
       }
@@ -246,6 +254,7 @@
     <div class="controls">
       <button class="add-city-btn" on:click={openCityModal}>➕ Add City</button>
       <button class="add-city-btn" on:click={copyShareLink}>🔗 Copy link</button>
+      <button class="add-city-btn" on:click={toggleSound}>{soundEnabled ? '🔊 Sound on' : '🔇 Sound off'}</button>
     </div>
     
     <div class="message">
@@ -275,6 +284,7 @@
     <div class="controls">
       <button class="add-city-btn" on:click={openCityModal}>➕ Add City</button>
       <button class="add-city-btn" on:click={copyShareLink}>🔗 Copy link</button>
+      <button class="add-city-btn" on:click={toggleSound}>{soundEnabled ? '🔊 Sound on' : '🔇 Sound off'}</button>
     </div>
 
     {#if countdownData.userCity}

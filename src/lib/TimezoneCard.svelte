@@ -2,7 +2,7 @@
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { now } from './tick.js';
   import { getNextNewYear, formatCountdown, getTimeInTimezone } from './dateUtils.js';
-  import { createConfetti } from './effects.js';
+  import { createConfetti, playChime } from './effects.js';
 
   export let city;
   export let isUser;
@@ -25,6 +25,7 @@
       confettiShown.add(city.zone);
       confettiShown = confettiShown; // Trigger reactivity
       createConfetti();
+      playChime();
     }
 
     // Update local time
